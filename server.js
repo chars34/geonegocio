@@ -29,8 +29,7 @@ app.get("/api/denue", async (req, res) => {
                 error: "Token INEGI no configurado"
             });
         }
-
-        const url = `https://www.inegi.org.mx/app/api/denue/v1/consulta/buscar/${codigo}/?latitud=${lat}&longitud=${lng}&radio=${radio}&token=${INEGI_TOKEN}`;
+const url = `https://www.inegi.org.mx/app/api/denue/v1/consulta/buscar/${codigo}/?latitud=${lat}&longitud=${lng}&radio=${radio}&token=${INEGI_TOKEN}`;
 
         console.log("URL DENUE:", url);
 
@@ -68,5 +67,6 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en puerto ${PORT}`);
 });
+
 
 

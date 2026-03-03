@@ -51,7 +51,7 @@ app.get("/api/denue", async (req, res) => {
         }
 
         // 🔥 Construcción de URL DENUE
-        let url = `https://www.inegi.org.mx/app/api/denue/v1/consulta/buscar/${codigo || ""}/?latitud=${lat}&longitud=${lng}&radio=${radio}&token=${INEGI_TOKEN}`;
+      https://www.inegi.org.mx/app/api/denue/v1/consulta/BuscarPorRadio/19.0433,-98.2019/500/TU_TOKEN/722511
 
         const response = await axios.get(url, {
             timeout: 10000
@@ -93,4 +93,5 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en puerto ${PORT}`);
+
 });

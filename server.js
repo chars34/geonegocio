@@ -45,13 +45,15 @@ app.get("/api/denue", async (req, res) => {
 
         res.json({ negocios });
 
-    } catch (error) {
-        console.error("Error DENUE:", error.response?.status || error.message);
+catch (error) {
+    console.error("STATUS:", error.response?.status);
+    console.error("DATA:", error.response?.data);
+    console.error("MESSAGE:", error.message);
 
-        res.status(500).json({
-            error: "Error consultando DENUE"
-        });
-    }
+    res.status(500).json({
+        error: error.response?.data || error.message
+    });
+}
 });
 
 app.use((err, req, res, next) => {
@@ -62,3 +64,4 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en puerto ${PORT}`);
 });
+

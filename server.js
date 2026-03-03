@@ -1,5 +1,5 @@
 const express = require("express");
-const axios = require("axios");
+
 const cors = require("cors");
 const { Pool } = require("pg");   // 👈 AQUÍ
 
@@ -21,60 +21,45 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api/denue", async (req, res) => {
-    try {
-        const { lat, lng, radio = 500, codigo } = req.query;
+  try {
+    const { lat, lng, radio = 500, codigo } = req.query;
 
-        if (!lat || !lng || !codigo) {
-            return res.status(400).json({
-                error: "Faltan parámetros lat, lng o codigo"
-            });
-        }
+    if (!lat || !lng || !codigo) {
+      return res.status(400).json({
+        error: "Faltan parámetros lat, lng o codigo"
+      });
+    }
 
-        const INEGI_TOKEN = process.env.INEGI_TOKEN;
+    // 🔥 Consulta usando fórmula Haversine (radio en metros)
+    const query = `
+      SELECT nombre, codigo_actividad, latitud, longitud
+      FROM denue
+      WHERE codigo_actividad = $1
+      AND (
+        6371000 * acos(
+          cos(radians($2)) *
+          cos(radians(latitud)) *
+          cos(radians(longitud) - radians($3)) +
+          sin(radians($2)) *
+          sin(radians(latitud))
+        )
+      ) <= $4
+      LIMIT 500
+    `;
 
-        if (!INEGI_TOKEN) {
-            return res.status(500).json({
-                error: "Token INEGI no configurado"
-            });
-        }
-const url = `https://www.inegi.org.mx/app/api/denue/v1/consulta/buscar/${codigo}/?latitud=${lat}&longitud=${lng}&radio=${radio}&token=${INEGI_TOKEN}`;
+    const values = [codigo, lat, lng, radio];
 
-        console.log("URL DENUE:", url);
+    const result = await pool.query(query, values);
 
-        const response = await axios.get(url, { timeout: 10000 });
-
-        const negocios = response.data.map(n => ({
-            nombre: n.Nombre,
-            direccion: n.Calle,
-            latitud: n.Latitud,
-            longitud: n.Longitud
-        }));
-
-        res.json({ negocios });
-
-catch (error) {
-    console.log("===== ERROR DETECTADO =====");
-    console.log("STATUS:", error.response?.status);
-    console.log("HEADERS:", error.response?.headers);
-    console.log("DATA:", error.response?.data);
-    console.log("MESSAGE:", error.message);
-
-    res.status(500).json({
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
+    res.json({
+      total: result.rows.length,
+      negocios: result.rows
     });
-}
+
+  } catch (error) {
+    console.error("Error BD:", error);
+    res.status(500).json({
+      error: "Error consultando base local"
+    });
+  }
 });
-
-app.use((err, req, res, next) => {
-    console.error("Error global:", err);
-    res.status(500).json({ error: "Error interno del servidor" });
-});
-
-app.listen(PORT, () => {
-    console.log(`Servidor corriendo en puerto ${PORT}`);
-});
-
-
-

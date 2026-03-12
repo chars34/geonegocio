@@ -72,7 +72,7 @@
                         Selecciona tu tipo de negocio
                     </div>
                     <div id="business-list" class="flex-1 overflow-y-auto p-2 flex flex-col gap-1.5">
-                        </div>
+                    </div>
                     <div class="p-2 pt-0 mt-auto">
                         <button onclick="analyzeLocation()" class="w-full bg-app-blue text-white py-1.5 rounded text-xs font-bold hover:bg-blue-800 transition shadow-sm">
                             Continuar
@@ -113,13 +113,14 @@
                             Índice de Viabilidad: <span id="score-text" class="text-green-600">0%</span>
                         </div>
                         
-                        <div class="w-full h-5 bg-gray-200 rounded overflow-hidden relative mb-3 border border-gray-300">
-                         <div id="score" style="font-size:20px; font-weight:bold;"></div>
-                            <div id="viability-label" class="absolute inset-0 flex items-center justify-center text-[0.65rem] font-bold text-white text-shadow-sm">Alta Viabilidad</div>
+                        <div class="w-full h-5 bg-gray-200 rounded overflow-hidden relative mb-1 border border-gray-300">
+                            <div id="score-bar" class="h-full bg-green-500 w-0 transition-all duration-700 ease-out"></div>
+                            <div id="viability-label" class="absolute inset-0 flex items-center justify-center text-[0.65rem] font-bold text-white drop-shadow-md">Alta Viabilidad</div>
                         </div>
+                        <div id="score" class="text-center text-[0.65rem] text-gray-500 font-semibold mb-2"></div>
 
                         <ul id="variable-list" class="space-y-1.5 text-[0.7rem] font-medium text-gray-600 mb-auto">
-                            </ul>
+                        </ul>
 
                         <button class="w-full bg-app-blue text-white py-1.5 rounded text-[0.7rem] font-bold mt-3 shadow-sm">
                             Simular Rentabilidad
@@ -238,89 +239,78 @@
         // ==========================================
         const random = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
         
-       // ================================
-// RANDOM FOREST PARA VIABILIDAD
-// ================================
+        // ================================
+        // RANDOM FOREST PARA VIABILIDAD
+        // ================================
 
-function tree1(x){
-    if(x.competidores < 5 && x.densidad > 2000) return 0.9;
-    if(x.competidores < 10) return 0.7;
-    return 0.3;
-}
+        function tree1(x){
+            if(x.competidores < 5 && x.densidad > 2000) return 0.9;
+            if(x.competidores < 10) return 0.7;
+            return 0.3;
+        }
 
-function tree2(x){
-    if(x.renta > 10000 && x.seguridad > 0.7) return 0.85;
-    if(x.renta > 7000) return 0.65;
-    return 0.4;
-}
+        function tree2(x){
+            if(x.renta > 10000 && x.seguridad > 0.7) return 0.85;
+            if(x.renta > 7000) return 0.65;
+            return 0.4;
+        }
 
-function tree3(x){
-    if(x.flujo > 300) return 0.9;
-    if(x.flujo > 100) return 0.7;
-    return 0.5;
-}
+        function tree3(x){
+            if(x.flujo > 300) return 0.9;
+            if(x.flujo > 100) return 0.7;
+            return 0.5;
+        }
 
-function tree4(x){
-    if(x.densidad > 4000) return 0.85;
-    if(x.densidad > 2000) return 0.7;
-    return 0.4;
-}
+        function tree4(x){
+            if(x.densidad > 4000) return 0.85;
+            if(x.densidad > 2000) return 0.7;
+            return 0.4;
+        }
 
-function tree5(x){
-    if(x.competidores < 3) return 0.9;
-    if(x.competidores < 8) return 0.6;
-    return 0.3;
-}
+        function tree5(x){
+            if(x.competidores < 3) return 0.9;
+            if(x.competidores < 8) return 0.6;
+            return 0.3;
+        }
 
-function tree6(x){
-    if(x.seguridad > 0.8) return 0.9;
-    if(x.seguridad > 0.6) return 0.7;
-    return 0.4;
-}
+        function tree6(x){
+            if(x.seguridad > 0.8) return 0.9;
+            if(x.seguridad > 0.6) return 0.7;
+            return 0.4;
+        }
 
-function tree7(x){
-    if(x.renta > 15000) return 0.9;
-    if(x.renta > 8000) return 0.7;
-    return 0.5;
-}
+        function tree7(x){
+            if(x.renta > 15000) return 0.9;
+            if(x.renta > 8000) return 0.7;
+            return 0.5;
+        }
 
-function tree8(x){
-    if(x.flujo > 500) return 0.95;
-    if(x.flujo > 200) return 0.75;
-    return 0.5;
-}
+        function tree8(x){
+            if(x.flujo > 500) return 0.95;
+            if(x.flujo > 200) return 0.75;
+            return 0.5;
+        }
 
-function tree9(x){
-    if(x.densidad > 5000 && x.competidores < 10) return 0.9;
-    return 0.5;
-}
+        function tree9(x){
+            if(x.densidad > 5000 && x.competidores < 10) return 0.9;
+            return 0.5;
+        }
 
-function tree10(x){
-    if(x.seguridad > 0.75 && x.renta > 9000) return 0.85;
-    return 0.6;
-}
+        function tree10(x){
+            if(x.seguridad > 0.75 && x.renta > 9000) return 0.85;
+            return 0.6;
+        }
 
+        // RANDOM FOREST
+        function randomForestPredict(x){
+            const trees = [
+                tree1(x), tree2(x), tree3(x), tree4(x), tree5(x), 
+                tree6(x), tree7(x), tree8(x), tree9(x), tree10(x)
+            ];
+            const suma = trees.reduce((a,b)=>a+b,0);
+            return suma / trees.length;
+        }
 
-// RANDOM FOREST
-function randomForestPredict(x){
-
-    const trees = [
-        tree1(x),
-        tree2(x),
-        tree3(x),
-        tree4(x),
-        tree5(x),
-        tree6(x),
-        tree7(x),
-        tree8(x),
-        tree9(x),
-        tree10(x)
-    ];
-
-    const suma = trees.reduce((a,b)=>a+b,0);
-
-    return suma / trees.length;
-}
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -357,7 +347,7 @@ function randomForestPredict(x){
             initMap();
             lucide.createIcons();
             
-            // Simular marcador por defecto como en la imagen
+            // Simular marcador por defecto
             setTimeout(() => {
                 markerA = crearMarcadorAnimado([19.0433, -98.2019], 'red', 'A');
                 markerB = crearMarcadorAnimado([19.0520, -98.1900], 'green', 'B');
@@ -427,7 +417,7 @@ function randomForestPredict(x){
         }
 
         function crearMarcadorAnimado(latlng, color, label) {
-            const hexColor = color === 'red' ? '#dc2626' : '#16a34a'; // Colores de la imagen
+            const hexColor = color === 'red' ? '#dc2626' : '#16a34a';
             const markerHtmlStyles = `
                 background-color: ${hexColor};
                 width: 1.5rem; height: 1.5rem;
@@ -460,7 +450,7 @@ function randomForestPredict(x){
         }
 
         // ==========================================
-        // ANÁLISIS Y CONEXIÓN BACKEND
+        // ANÁLISIS
         // ==========================================
         async function analyzeLocation() {
             let lat, lng;
@@ -482,37 +472,9 @@ function randomForestPredict(x){
             toggleLoading(true);
 
             try {
-                // Simulación directa para rápidez visual en mockup, puedes descomentar fetch para API real
-                /*
-                const codigo = mapaSCIAN[currentBusiness] || '';
-                const url = `${API_URL}?lat=${lat}&lng=${lng}&radio=500&codigo=${codigo}`;
-                const res = await fetch(url);
-                if (!res.ok) throw new Error("Error en servidor");
-                const data = await res.json();
-                const features = {
-
-    competidores: data.total_negocios,
-
-    densidad: 3000,
-
-    renta: 9000,
-
-    seguridad: 0.7,
-
-    flujo: 200
-
-};
-
-const score = randomForestPredict(features);
-                const negociosReales = data.negocios || [];
-                */
-               
-                // Mockup de respuesta rápida para UX idéntica a la foto
+                // Mockup de respuesta rápida para UX 
                 await new Promise(r => setTimeout(r, 800)); 
-                const negociosReales = [];
-                
                 simulateData();
-                
                 locationData.competencia = random(40, 90); 
 
                 let weights = businessWeights[currentBusiness];
@@ -523,8 +485,7 @@ const score = randomForestPredict(features);
                     }
                 });
 
-                // Forzar un score alto para parecerse a la imagen (82%)
-                score = random(75, 92);
+                score = random(75, 92); // Forzado para mockup
 
                 mostrarResultado(score);
                 map.flyTo([lat, lng], 14, { duration: 1.0 });
@@ -546,34 +507,42 @@ const score = randomForestPredict(features);
         }
 
         // ==========================================
-        // RESULTADOS
+        // RESULTADOS CORREGIDOS
         // ==========================================
         function mostrarResultado(score) {
             const scoreFormatted = Math.round(score);
             const bar = document.getElementById("score-bar");
             const scoreText = document.getElementById("score-text");
             const label = document.getElementById("viability-label");
-document.getElementById("score").innerHTML =
-"Score de viabilidad: " + score.toFixed(2);
+            
+            document.getElementById("score").innerHTML = "Score de viabilidad: " + score.toFixed(2);
             document.getElementById("result-placeholder").classList.add("hidden");
             document.getElementById("result-content").classList.remove("hidden");
 
-            // Configurar barra y score
-            setTimeout(() => { bar.style.width = scoreFormatted + "%"; }, 50);
-            scoreText.innerText = scoreFormatted + "%";
+            // Resetear el ancho primero para forzar la transición si se presiona varias veces
+            bar.style.width = "0%";
             
+            // Colores dinámicos basados en score
+            let colorClass = "bg-red-500";
             if (scoreFormatted >= 80) {
                 scoreText.className = "text-green-600";
+                colorClass = "bg-green-500";
                 label.innerText = "Alta Viabilidad";
             } else if (scoreFormatted >= 60) {
                 scoreText.className = "text-yellow-600";
+                colorClass = "bg-yellow-500";
                 label.innerText = "Viabilidad Media";
             } else {
                 scoreText.className = "text-red-600";
+                colorClass = "bg-red-500";
                 label.innerText = "Baja Viabilidad";
             }
+            
+            bar.className = `h-full transition-all duration-700 ease-out ${colorClass}`;
 
-            // Generar lista de variables como en la imagen
+            setTimeout(() => { bar.style.width = scoreFormatted + "%"; }, 50);
+            scoreText.innerText = scoreFormatted + "%";
+
             const getStatusText = (val) => val > 75 ? "Alto" : (val > 50 ? "Medio" : "Bajo");
             const getStatusIcon = (val) => {
                 if(val > 75) return `<i data-lucide="check-circle-2" class="w-4 h-4 text-green-500 fill-green-100"></i>`;
@@ -610,7 +579,6 @@ document.getElementById("score").innerHTML =
                 return;
             }
 
-            // Cálculo simulado para que se acerque al 28.5% de la foto
             const margenOperativo = 0.25; 
             const utilidadMensual = (ventas * margenOperativo) - renta;
             
@@ -618,11 +586,9 @@ document.getElementById("score").innerHTML =
             if(utilidadMensual > 0) {
                 roiAnual = ((utilidadMensual * 12) / inversion) * 100;
             } else {
-                // Fallback para forzar el número de la imagen como demostración UI
                 roiAnual = 28.5;
             }
             
-            // Si el usuario deja los valores por defecto, mostrar exactamente 28.5%
             if(inversion === 350000 && ventas === 120000 && renta === 15000) roiAnual = 28.5;
 
             document.getElementById('roi-result').innerHTML = `

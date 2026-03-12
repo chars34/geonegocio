@@ -301,12 +301,6 @@
             return L.marker(latlng, { draggable: true, icon: icon }).addTo(map);
         }
 
-       
-
-       
-
-       
-
         function showToast(msj, type) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -343,46 +337,29 @@
             });
         }
 
-     
-
-        function updateSim() {
-            updateSimTextOnly();
-            const inv = parseFloat(document.getElementById('input-inversion').value);
-            const vta = parseFloat(document.getElementById('input-ventas').value);
-            const util = (vta * businessData[currentBusiness].margen);
-            const roi = ((util * 12) / inv) * 100;
-            document.getElementById('roi-result').innerText = roi.toFixed(1) + "%";
+        // --- Corrección: Función añadida para actualizar texto del simulador ---
+        function updateSimTextOnly() {
+            const inputInv = document.getElementById('input-inversion');
+            const inputVen = document.getElementById('input-ventas');
+            if (inputInv && document.getElementById('val-inversion')) {
+                document.getElementById('val-inversion').innerText = formatter.format(inputInv.value);
+            }
+            if (inputVen && document.getElementById('val-ventas')) {
+                document.getElementById('val-ventas').innerText = formatter.format(inputVen.value);
+            }
         }
 
-        function actualizarUIResultados() {
-            const res = results[currentPoint];
-            if (!res) return;
-            document.getElementById('analysis-empty').classList.add('hidden');
-            document.getElementById('analysis-content').classList.remove('hidden');
-            document.getElementById('analysis-content').classList.add('flex');
-            document.getElementById('score-text').innerText = res.score + "%";
-            document.getElementById('score-bar').style.width = res.score + "%";
-            document.getElementById('sim-score-text').innerText = res.score + "%";
-            document.getElementById('result-title').innerText = "Punto " + currentPoint;
+        function setPoint(p){
+            currentPoint = p;
+            const badge = document.getElementById('current-point-badge');
+            badge.innerText = "Editando: Punto " + p;
+            badge.classList.remove("bg-red-500","bg-green-500");
+            badge.classList.add(p === "A" ? "bg-red-500" : "bg-green-500");
         }
-
-      function setPoint(p){
-
-    currentPoint = p;
-
-    const badge = document.getElementById('current-point-badge');
-
-    badge.innerText = "Editando: Punto " + p;
-
-    badge.classList.remove("bg-red-500","bg-green-500");
-
-    badge.classList.add(p === "A" ? "bg-red-500" : "bg-green-500");
-
-}
 
         function locateUser() {
             map.locate({setView: true, maxZoom: 15});
-          map.once('locationfound', (e) => {
+            map.once('locationfound', (e) => {
                 if (currentPoint === "A") {
                     if (markerA) map.removeLayer(markerA);
                     markerA = crearMarcadorAnimado(e.latlng, 'red', 'A');
@@ -403,9 +380,7 @@
         // ==========================================
         // RANDOM FOREST PARA VIABILIDAD (INTEGRADO)
         // ==========================================
-        // Modelamos un Random Forest simulado usando los árboles proveídos
         function randomForestPredict(x){
-            // x = { competidores, densidad, renta, seguridad, flujo }
             const tree1 = (x) => { if(x.competidores < 5 && x.densidad > 2000) return 0.9; if(x.competidores < 10) return 0.7; return 0.3; }
             const tree2 = (x) => { if(x.renta > 10000 && x.seguridad > 0.7) return 0.85; if(x.renta > 7000) return 0.65; return 0.4; }
             const tree3 = (x) => { if(x.flujo > 300) return 0.9; if(x.flujo > 100) return 0.7; return 0.5; }
@@ -421,175 +396,142 @@
             const suma = trees.reduce((a,b)=>a+b,0);
             return suma / trees.length;
         }
-function calcularTop5(lat,lng){
 
-    topLocations = [];
+        function calcularTop5(lat,lng){
+            topLocations = [];
+            for(let i=0;i<5;i++){
+                const offsetLat = (Math.random() - 0.5) * 0.01;
+                const offsetLng = (Math.random() - 0.5) * 0.01;
+                const score = Math.floor(Math.random()*20)+75;
 
-    for(let i=0;i<5;i++){
+                topLocations.push({
+                    lat: lat + offsetLat,
+                    lng: lng + offsetLng,
+                    score: score
+                });
+            }
+            mostrarTop5();
+        }
 
-        const offsetLat = (Math.random() - 0.5) * 0.01;
-        const offsetLng = (Math.random() - 0.5) * 0.01;
+        function mostrarTop5(){
+            if(topMarkers){
+                topMarkers.forEach(m => map.removeLayer(m));
+            }
+            topMarkers = [];
+            topLocations.forEach((p,i)=>{
+                const marker = L.circleMarker([p.lat,p.lng],{
+                    radius: i==0 ? 14 : 10,
+                    color:"#fff",
+                    weight:2,
+                    fillColor:"#22c55e",
+                    fillOpacity:0.9
+                }).addTo(map);
 
-        const score = Math.floor(Math.random()*20)+75;
+                marker.bindPopup(`
+                    ⭐ <b>Top ${i+1} ubicación</b><br>
+                    Score: ${p.score}%
+                `);
 
-        topLocations.push({
-            lat: lat + offsetLat,
-            lng: lng + offsetLng,
-            score: score
-        });
-    }
+                topMarkers.push(marker);
+            });
+        }
 
-    mostrarTop5();
-}
-function mostrarTop5(){
+        function limpiarMapa(){
+            if(markersCluster){
+                markersCluster.clearLayers();
+            }
+            if(heatLayer){
+                map.removeLayer(heatLayer);
+                heatLayer = null;
+            }
+            if(topMarkers){
+                topMarkers.forEach(m => map.removeLayer(m));
+                topMarkers = [];
+            }
+            if(userMarker){
+                map.removeLayer(userMarker);
+                userMarker = null;
+            }
+        }
 
-    if(topMarkers){
-        topMarkers.forEach(m => map.removeLayer(m));
-    }
-
-    topMarkers = [];
-
-    topLocations.forEach((p,i)=>{
-
-        const marker = L.circleMarker([p.lat,p.lng],{
-            radius: i==0 ? 14 : 10,
-            color:"#fff",
-            weight:2,
-            fillColor:"#22c55e",
-            fillOpacity:0.9
-        }).addTo(map);
-
-        marker.bindPopup(`
-            ⭐ <b>Top ${i+1} ubicación</b><br>
-            Score: ${p.score}%
-        `);
-
-        topMarkers.push(marker);
-    });
-}
-            function limpiarMapa(){
-
-    // limpiar marcadores DENUE
-    if(markersCluster){
-        markersCluster.clearLayers();
-    }
-
-    // limpiar heatmap
-    if(heatLayer){
-        map.removeLayer(heatLayer);
-        heatLayer = null;
-    }
-
-    // limpiar TOP 5
-    if(topMarkers){
-        topMarkers.forEach(m => map.removeLayer(m));
-        topMarkers = [];
-    }
-
-    // limpiar marcador de análisis
-    if(userMarker){
-        map.removeLayer(userMarker);
-        userMarker = null;
-    }
-
-}
         function sugerirNegocio(negocios){
+            const conteo = {};
+            negocios.forEach(n=>{
+                const act = n.codigo_act || "otros";
+                if(!conteo[act]){
+                    conteo[act] = 0;
+                }
+                conteo[act]++;
+            });
 
-    const conteo = {};
+            const lista = Object.entries(conteo)
+                .map(([codigo,total])=>({
+                    codigo,
+                    total
+                }))
+                .sort((a,b)=>a.total - b.total);
 
-    negocios.forEach(n=>{
-        const act = n.codigo_act || "otros";
+            const sugerencias = lista.slice(0,3);
+            mostrarSugerencias(sugerencias);
+        } /* --- Corrección: Se agregó la llave de cierre que faltaba aquí --- */
 
-        if(!conteo[act]){
-            conteo[act] = 0;
+        function mostrarSugerencias(lista){
+            const div = document.getElementById("recomendaciones");
+            const competencia = lista.length;
+            const score = results[currentPoint]?.score || "--";
+            div.innerHTML = `
+                <div style="font-size:13px; line-height:1.4;">
+                    <b>🤖 IA recomienda</b><br>
+                    🏪 Negocio: <b>${currentBusiness}</b><br>
+                    📈 Score: <b>${score}%</b><br>
+                    🏢 Competencia cercana: <b>${competencia}</b>
+                </div>
+            `;
         }
 
-        conteo[act]++;
-    });
+        async function escanearMapa() {
+            const bounds = map.getBounds();
+            const south = bounds.getSouth();
+            const north = bounds.getNorth();
+            const west = bounds.getWest();
+            const east = bounds.getEast();
+            const step = 0.01; 
+            const puntos = [];
 
-    const lista = Object.entries(conteo)
-        .map(([codigo,total])=>({
-            codigo,
-            total
-        }))
-        .sort((a,b)=>a.total - b.total); // menos competencia primero
-
-    const sugerencias = lista.slice(0,3);
-
-    mostrarSugerencias(sugerencias);
-function mostrarSugerencias(lista){
-
-    const div = document.getElementById("recomendaciones");
-
-    const competencia = lista.length;
-    const score = results[currentPoint]?.score || "--";
-
-    div.innerHTML = `
-        <div style="font-size:13px; line-height:1.4;">
-            <b>🤖 IA recomienda</b><br>
-            🏪 Negocio: <b>${currentBusiness}</b><br>
-            📈 Score: <b>${score}%</b><br>
-            🏢 Competencia cercana: <b>${competencia}</b>
-        </div>
-    `;
-}
-      async function escanearMapa() {
-
-    const bounds = map.getBounds();
-
-    const south = bounds.getSouth();
-    const north = bounds.getNorth();
-    const west = bounds.getWest();
-    const east = bounds.getEast();
-
-    const step = 0.01; // distancia entre puntos (~1km)
-
-    const puntos = [];
-
-    for(let lat = south; lat <= north; lat += step){
-        for(let lng = west; lng <= east; lng += step){
-
-            const input = {
-                competidores: Math.floor(Math.random()*10),
-                densidad: Math.floor(Math.random()*5000)+2000,
-                renta: Math.floor(Math.random()*20000)+6000,
-                seguridad: Math.random(),
-                flujo: Math.floor(Math.random()*800)
-            };
-
-            const score = randomForestPredict(input);
-
-            puntos.push([lat,lng,score]);
+            for(let lat = south; lat <= north; lat += step){
+                for(let lng = west; lng <= east; lng += step){
+                    const input = {
+                        competidores: Math.floor(Math.random()*10),
+                        densidad: Math.floor(Math.random()*5000)+2000,
+                        renta: Math.floor(Math.random()*20000)+6000,
+                        seguridad: Math.random(),
+                        flujo: Math.floor(Math.random()*800)
+                    };
+                    const score = randomForestPredict(input);
+                    puntos.push([lat,lng,score]);
+                }
+            }
+            mostrarMapaRentabilidad(puntos);
         }
-    }
 
-    mostrarMapaRentabilidad(puntos);
-}
         function mostrarMapaRentabilidad(puntos){
+            if(zonasRentablesLayer){
+                map.removeLayer(zonasRentablesLayer);
+                zonasRentablesLayer = null;
+            }
+            const heatData = puntos.map(p => [ p[0], p[1], p[2] ]);
+            zonasRentablesLayer = L.heatLayer(heatData,{
+                radius:35,
+                blur:25,
+                maxZoom:16
+            }).addTo(map);
+        }
 
-    if(zonasRentablesLayer){
-        map.removeLayer(zonasRentablesLayer);
-        zonasRentablesLayer = null;
-
-    }
-
-    const heatData = puntos.map(p => [
-        p[0],
-        p[1],
-        p[2]
-    ]);
-
-    zonasRentablesLayer = L.heatLayer(heatData,{
-        radius:35,
-        blur:25,
-        maxZoom:16
-    }).addTo(map);
-}
         // ==========================================
         // ANÁLISIS PRINCIPAL
         // ==========================================
         async function analyzeLocation() {
-             limpiarMapa();
+            limpiarMapa();
             let lat, lng;
             let isA = currentPoint === "A";
             let mColor = isA ? "#ef4444" : "#10b981";
@@ -602,7 +544,6 @@ function mostrarSugerencias(lista){
 
             ({ lat, lng } = activeMarker.getLatLng());
 
-            // Dibujar círculo
             if (isA) {
                 if (circleA) map.removeLayer(circleA);
                 circleA = L.circle([lat, lng], { radius: 500, color: mColor, weight: 2, fillColor: mColor, fillOpacity: 0.1, dashArray: '5, 5' }).addTo(map);
@@ -617,9 +558,8 @@ function mostrarSugerencias(lista){
                 const codigo = businessData[currentBusiness].scian;
                 const url = `${API_URL}?lat=${lat}&lng=${lng}&radio=500&codigo=${codigo}`;
                 
-                // Fallback timeout para APIs lentas
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+                const timeoutId = setTimeout(() => controller.abort(), 8000); 
                 
                 let data = { negocios: [] };
                 try {
@@ -631,7 +571,6 @@ function mostrarSugerencias(lista){
                     }
                 } catch (e) {
                     console.warn("Usando datos simulados debido a fallo de red/timeout", e);
-                    // Generar mock si falla
                     data.negocios = Array.from({length: Math.floor(Math.random() * 15)}, () => ({
                         latitud: lat + (Math.random() - 0.5) * 0.01,
                         longitud: lng + (Math.random() - 0.5) * 0.01
@@ -640,15 +579,15 @@ function mostrarSugerencias(lista){
                 clearTimeout(timeoutId);
 
                 const negociosReales = data.negocios || [];
-sugerirNegocio(negociosReales);
-                // Renderizar Calor y Clusters si es el punto activo
+                sugerirNegocio(negociosReales);
+                
                 markersCluster.clearLayers();
                 if (heatLayer) map.removeLayer(heatLayer);
 
                 if(negociosReales.length > 0) {
                    const heatPoints = negociosReales
-    .filter(n => n.latitud && n.longitud)
-    .map(n => [n.latitud, n.longitud, 0.6]);
+                    .filter(n => n.latitud && n.longitud)
+                    .map(n => [n.latitud, n.longitud, 0.6]);
                     heatLayer = L.heatLayer(heatPoints, { radius: 25, blur: 20, gradient: {0.4: 'blue', 0.6: 'cyan', 0.8: 'yellow', 1.0: 'red'} }).addTo(map);
                     
                     negociosReales.forEach(n => {
@@ -659,31 +598,26 @@ sugerirNegocio(negociosReales);
                     });
                 }
 
-                // Generar inputs para el modelo Random Forest (combinando reales y simulados)
                 const modelInput = {
                     competidores: negociosReales.length,
-                    densidad: Math.floor(Math.random() * (6000 - 1500 + 1)) + 1500, // 1500 - 6000
-                    renta: Math.floor(Math.random() * (25000 - 6000 + 1)) + 6000,   // 6000 - 25000
-                    seguridad: (Math.floor(Math.random() * (95 - 40 + 1)) + 40) / 100, // 0.40 - 0.95
-                    flujo: Math.floor(Math.random() * (600 - 50 + 1)) + 50          // 50 - 600
+                    densidad: Math.floor(Math.random() * (6000 - 1500 + 1)) + 1500, 
+                    renta: Math.floor(Math.random() * (25000 - 6000 + 1)) + 6000,   
+                    seguridad: (Math.floor(Math.random() * (95 - 40 + 1)) + 40) / 100, 
+                    flujo: Math.floor(Math.random() * (600 - 50 + 1)) + 50          
                 };
 
-                // Predicción Real con el código RF proveído
                 const scoreRaw = randomForestPredict(modelInput);
                 const scoreFinal = Math.round(scoreRaw * 100);
 
-                // Guardar resultado
                 results[currentPoint] = {
                     score: scoreFinal,
                     inputs: modelInput,
                     lat, lng
                 };
 
-                // Centrar mapa
                 map.flyTo([lat, lng], 14, { duration: 0.8 });
-calcularTop5(lat,lng);
+                calcularTop5(lat,lng);
 
-                // Cambiar a pestaña de análisis
                 setTimeout(() => {
                     actualizarUIResultados();
                     switchTab('view-analysis');
@@ -705,7 +639,6 @@ calcularTop5(lat,lng);
             const emptyState = document.getElementById("analysis-empty");
             const contentState = document.getElementById("analysis-content");
             
-            // Determinar qué punto mostrar en la tarjeta principal (preferimos el recién calculado)
             const activeRes = results[currentPoint] || (currentPoint === 'A' ? results.B : results.A);
 
             if (!activeRes) {
@@ -718,7 +651,6 @@ calcularTop5(lat,lng);
             contentState.classList.remove("hidden");
             contentState.classList.add("flex");
 
-            // Configurar UI Tarjeta Principal
             const isResA = activeRes === results.A;
             document.getElementById("result-title").innerHTML = `
                 <span class="w-3 h-3 rounded-full ${isResA ? 'bg-red-500' : 'bg-green-500'} inline-block shadow-sm"></span> 
@@ -731,7 +663,7 @@ calcularTop5(lat,lng);
             const scoreText = document.getElementById("score-text");
             const label = document.getElementById("viability-label");
             
-            bar.style.width = "0%"; // reset para animación
+            bar.style.width = "0%"; 
             
             let colorClass, textClass;
             if (score >= 75) { textClass = "text-emerald-600"; colorClass = "bg-emerald-500"; label.innerText = "Excelente Viabilidad"; } 
@@ -744,16 +676,13 @@ calcularTop5(lat,lng);
 
             setTimeout(() => { bar.style.width = score + "%"; }, 100);
             
-            // Animación de números
             animateValue(scoreText, 0, score, 1000);
 
-            // Métricas
             const getIcon = (val, thresholds) => {
                 if(val >= thresholds[0]) return `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>`;
                 if(val >= thresholds[1]) return `<i data-lucide="minus-circle" class="w-4 h-4 text-amber-500"></i>`;
                 return `<i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i>`;
             };
-            // Invierte logica para competidores (menos es mejor)
             const getIconInv = (val, thresholds) => {
                 if(val <= thresholds[0]) return `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>`;
                 if(val <= thresholds[1]) return `<i data-lucide="minus-circle" class="w-4 h-4 text-amber-500"></i>`;
@@ -789,7 +718,6 @@ calcularTop5(lat,lng);
             `;
             lucide.createIcons();
 
-            // Comparativa Section
             const compSec = document.getElementById("comparison-section");
             if (results.A && results.B) {
                 compSec.classList.remove("hidden");
@@ -816,9 +744,7 @@ calcularTop5(lat,lng);
                 compSec.classList.add("hidden");
             }
 
-            // Preparar Simulador
             const sliderVentas = document.getElementById('input-ventas');
-            // Base ventas = 50k, ajustado por score
             const ventasProyectadas = 50000 + (score * 1500); 
             sliderVentas.value = ventasProyectadas;
             updateSimTextOnly();
@@ -828,37 +754,28 @@ calcularTop5(lat,lng);
         // SIMULADOR FINANCIERO
         // ==========================================
         function updateSim(){
+            updateSimTextOnly();
+            const inversion = parseFloat(document.getElementById('input-inversion').value);
+            const ventas = parseFloat(document.getElementById('input-ventas').value);
+            const margen = businessData[currentBusiness].margen || 0.25;
+            const utilidadMensual = ventas * margen;
+            const roiAnual = ((utilidadMensual * 12) / inversion) * 100;
+            const roiResult = document.getElementById('roi-result');
 
-    updateSimTextOnly();
-
-    const inversion = parseFloat(document.getElementById('input-inversion').value);
-    const ventas = parseFloat(document.getElementById('input-ventas').value);
-
-    const margen = businessData[currentBusiness].margen || 0.25;
-
-    const utilidadMensual = ventas * margen;
-
-    const roiAnual = ((utilidadMensual * 12) / inversion) * 100;
-
-    const roiResult = document.getElementById('roi-result');
-
-    if(roiAnual > 0){
-        roiResult.innerText = roiAnual.toFixed(1) + "%";
-        roiResult.className = "text-lg font-extrabold text-emerald-600";
-    }else{
-        roiResult.innerText = "0%";
-        roiResult.className = "text-lg font-extrabold text-red-600";
-    }
-}
-
-           
+            if(roiAnual > 0){
+                roiResult.innerText = roiAnual.toFixed(1) + "%";
+                roiResult.className = "text-lg font-extrabold text-emerald-600";
+            }else{
+                roiResult.innerText = "0%";
+                roiResult.className = "text-lg font-extrabold text-red-600";
+            }
+        }
 
         function animateValue(obj, start, end, duration) {
             let startTimestamp = null;
             const step = (timestamp) => {
                 if (!startTimestamp) startTimestamp = timestamp;
                 const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                // easing out
                 const easeOutQuad = 1 - (1 - progress) * (1 - progress);
                 obj.innerHTML = Math.floor(easeOutQuad * (end - start) + start) + "%";
                 if (progress < 1) {
@@ -867,7 +784,6 @@ calcularTop5(lat,lng);
             };
             window.requestAnimationFrame(step);
         }
-
     </script>
 </body>
 </html>

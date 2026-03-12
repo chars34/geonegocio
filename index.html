@@ -36,37 +36,40 @@
         
         .marker-cluster-small { background-color: rgba(239, 68, 68, 0.6); }
         .marker-cluster-small div { background-color: rgba(239, 68, 68, 0.8); color: white; }
-.recomendacion-panel {
-    position: absolute;
-    top: 110px; /* Debajo del botón de ubicación */
-    right: 16px;
-    width: 220px;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(8px); /* Efecto de vidrio esmerilado */
-    padding: 14px;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    font-size: 13px;
-    z-index: 500;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    transform: translateX(250px); /* Escondido por defecto */
-}
+        
+        .recomendacion-panel {
+            position: absolute;
+            top: 110px; /* Debajo del botón de ubicación */
+            right: 16px;
+            width: 220px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px); /* Efecto de vidrio esmerilado */
+            padding: 16px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            font-size: 13px;
+            z-index: 500;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: translateX(250px); /* Escondido por defecto */
+            opacity: 0;
+        }
 
-.recomendacion-panel.active {
-    transform: translateX(0); /* Se desliza hacia adentro */
-}
+        .recomendacion-panel.active {
+            transform: translateX(0); /* Se desliza hacia adentro */
+            opacity: 1;
+        }
 
-.ia-badge {
-    background: #0b4a99;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 20px;
-    font-size: 10px;
-    font-weight: bold;
-    margin-bottom: 8px;
-    display: inline-block;
-}
+        .ia-badge {
+            background: #0b4a99;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
 
         .app-container {
             max-width: 480px;
@@ -123,7 +126,8 @@
             <section id="view-map" class="absolute inset-0 flex flex-col transition-opacity duration-300">
                 <div class="flex-1 relative w-full h-full z-0" id="map-container">
                     <div id="map" class="absolute inset-0"></div>
-                    <div id="recomendaciones"class="recomendacion-panel"></div>
+                    <div id="recomendaciones" class="recomendacion-panel relative"></div>
+                    
                     <div id="loading-overlay" class="absolute inset-0 bg-white/70 backdrop-blur-[2px] z-[1000] hidden flex-col items-center justify-center">
                         <div class="bg-white p-4 rounded-xl shadow-xl flex flex-col items-center">
                             <div class="animate-spin rounded-full h-10 w-10 border-4 border-slate-200 border-t-app-blue mb-3"></div>
@@ -334,22 +338,12 @@
                 
                 btn.onclick = () => { 
                     currentBusiness = name; 
-                    
-                    // 1. Limpiar el mapa de análisis previos (heatmap, clusters, top 5)
                     limpiarMapa();
-                    
-                    // 2. Limpiar círculos de radio si existen
                     if (circleA) { map.removeLayer(circleA); circleA = null; }
                     if (circleB) { map.removeLayer(circleB); circleB = null; }
-                    
-                    // 3. Limpiar el panel flotante de recomendaciones
-                    const recPanel = document.getElementById("recomendaciones");
-                    if(recPanel) recPanel.innerHTML = "";
-                    
-                    // 4. Resetear los resultados para evitar que el simulador/análisis use datos viejos
+                    cerrarRecomendaciones(); // Cierra el panel al cambiar de negocio
                     results = { A: null, B: null };
                     
-                    // 5. Restablecer la pestaña de análisis a su estado "vacío"
                     const emptyState = document.getElementById("analysis-empty");
                     const contentState = document.getElementById("analysis-content");
                     const compSection = document.getElementById("comparison-section");
@@ -358,14 +352,13 @@
                     if(contentState) contentState.classList.add("hidden");
                     if(compSection) compSection.classList.add("hidden");
                     
-                    // 6. Volver a renderizar los botones para actualizar el color del botón activo
                     initBusinessButtons(); 
                 };
                 
                 list.appendChild(btn);
             });
         }
-        // --- Corrección: Función añadida para actualizar texto del simulador ---
+
         function updateSimTextOnly() {
             const inputInv = document.getElementById('input-inversion');
             const inputVen = document.getElementById('input-ventas');
@@ -405,9 +398,6 @@
             });
         }
 
-        // ==========================================
-        // RANDOM FOREST PARA VIABILIDAD (INTEGRADO)
-        // ==========================================
         function randomForestPredict(x){
             const tree1 = (x) => { if(x.competidores < 5 && x.densidad > 2000) return 0.9; if(x.competidores < 10) return 0.7; return 0.3; }
             const tree2 = (x) => { if(x.renta > 10000 && x.seguridad > 0.7) return 0.85; if(x.renta > 7000) return 0.65; return 0.4; }
@@ -465,76 +455,68 @@
         }
 
         function limpiarMapa(){
-            if(markersCluster){
-                markersCluster.clearLayers();
-            }
-            if(heatLayer){
-                map.removeLayer(heatLayer);
-                heatLayer = null;
-            }
-            if(topMarkers){
-                topMarkers.forEach(m => map.removeLayer(m));
-                topMarkers = [];
-            }
-            if(userMarker){
-                map.removeLayer(userMarker);
-                userMarker = null;
-            }
+            if(markersCluster) markersCluster.clearLayers();
+            if(heatLayer){ map.removeLayer(heatLayer); heatLayer = null; }
+            if(topMarkers){ topMarkers.forEach(m => map.removeLayer(m)); topMarkers = []; }
+            if(userMarker){ map.removeLayer(userMarker); userMarker = null; }
+            cerrarRecomendaciones();
+        }
+
+        // NUEVA FUNCIÓN: Para cerrar el panel
+        function cerrarRecomendaciones() {
             const div = document.getElementById("recomendaciones");
-            if (div) div.classList.remove('active'); // Esconde el panel
+            if (div) div.classList.remove('active');
         }
 
         function sugerirNegocio(negocios){
             const conteo = {};
             negocios.forEach(n=>{
                 const act = n.codigo_act || "otros";
-                if(!conteo[act]){
-                    conteo[act] = 0;
-                }
+                if(!conteo[act]) conteo[act] = 0;
                 conteo[act]++;
             });
 
             const lista = Object.entries(conteo)
-                .map(([codigo,total])=>({
-                    codigo,
-                    total
-                }))
+                .map(([codigo,total])=>({codigo, total}))
                 .sort((a,b)=>a.total - b.total);
 
             const sugerencias = lista.slice(0,3);
             mostrarSugerencias(sugerencias);
-        } /* --- Corrección: Se agregó la llave de cierre que faltaba aquí --- */
+        }
 
-       function mostrarSugerencias(lista) {
-    const div = document.getElementById("recomendaciones");
-    const score = results[currentPoint]?.score || 0;
-    
-    // Determinar color según el score
-    let colorClass = score >= 75 ? 'text-emerald-600' : (score >= 50 ? 'text-amber-500' : 'text-red-500');
+        function mostrarSugerencias(lista) {
+            const div = document.getElementById("recomendaciones");
+            const score = results[currentPoint]?.score || 0;
+            
+            let colorClass = score >= 75 ? 'text-emerald-600' : (score >= 50 ? 'text-amber-500' : 'text-red-500');
 
-    div.innerHTML = `
-        <div class="ia-badge">🤖 IA SMART INSIGHT</div>
-        <div class="flex flex-col gap-2">
-            <div>
-                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Giro Sugerido</p>
-                <p class="text-sm font-bold text-slate-800">${currentBusiness.toUpperCase()}</p>
-            </div>
-            <div class="flex justify-between items-center border-t border-slate-100 pt-2">
-                <div>
-                    <p class="text-[10px] text-slate-500 uppercase font-bold">Viabilidad</p>
-                    <p class="text-lg font-black ${colorClass}">${score}%</p>
+            // HTML ACTUALIZADO: Se añade el botón <button> con la X en la esquina superior derecha
+            div.innerHTML = `
+                <button onclick="cerrarRecomendaciones()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none bg-white/50 rounded-full p-1" title="Cerrar recomendación">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+                <div class="ia-badge shadow-sm">🤖 IA SMART INSIGHT</div>
+                <div class="flex flex-col gap-2 mt-1">
+                    <div>
+                        <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Giro Sugerido</p>
+                        <p class="text-sm font-bold text-slate-800">${currentBusiness.toUpperCase()}</p>
+                    </div>
+                    <div class="flex justify-between items-center border-t border-slate-200 pt-2 mt-1">
+                        <div>
+                            <p class="text-[10px] text-slate-500 uppercase font-bold">Viabilidad</p>
+                            <p class="text-lg font-black ${colorClass}">${score}%</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-slate-500 uppercase font-bold">Competencia</p>
+                            <p class="text-sm font-bold text-slate-700">${lista.length} locales</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="text-right">
-                    <p class="text-[10px] text-slate-500 uppercase font-bold">Competencia</p>
-                    <p class="text-sm font-bold text-slate-700">${lista.length} locales</p>
-                </div>
-            </div>
-        </div>
-    `;
+            `;
 
-    // Mostrar el panel con animación
-    div.classList.add('active');
-}
+            div.classList.add('active');
+            lucide.createIcons(); // Es necesario recargar los iconos tras inyectar el HTML
+        }
 
         async function escanearMapa() {
             const bounds = map.getBounds();
@@ -574,9 +556,6 @@
             }).addTo(map);
         }
 
-        // ==========================================
-        // ANÁLISIS PRINCIPAL
-        // ==========================================
         async function analyzeLocation() {
             limpiarMapa();
             let lat, lng;
@@ -626,7 +605,6 @@
                 clearTimeout(timeoutId);
 
                 const negociosReales = data.negocios || [];
-                sugerirNegocio(negociosReales);
                 
                 markersCluster.clearLayers();
                 if (heatLayer) map.removeLayer(heatLayer);
@@ -664,6 +642,7 @@
 
                 map.flyTo([lat, lng], 14, { duration: 0.8 });
                 calcularTop5(lat,lng);
+                sugerirNegocio(negociosReales); // Llamamos la sugerencia después de tener el score calculado
 
                 setTimeout(() => {
                     actualizarUIResultados();
@@ -679,9 +658,6 @@
             }
         }
 
-        // ==========================================
-        // UI DE RESULTADOS Y COMPARATIVA
-        // ==========================================
         function actualizarUIResultados() {
             const emptyState = document.getElementById("analysis-empty");
             const contentState = document.getElementById("analysis-content");
@@ -797,9 +773,6 @@
             updateSimTextOnly();
         }
 
-        // ==========================================
-        // SIMULADOR FINANCIERO
-        // ==========================================
         function updateSim(){
             updateSimTextOnly();
             const inversion = parseFloat(document.getElementById('input-inversion').value);

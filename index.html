@@ -324,6 +324,7 @@ Escanear zonas rentables
         // ==========================================
         // VARIABLES GLOBALES
         // ==========================================
+      let topMarkers = [];
         let map;
         let markersCluster; 
         let markerA = null;
@@ -623,7 +624,13 @@ function calcularTop5(lat, lng){
     topLocations.forEach((p,i)=>{
 
         const color = ["#22c55e","#4ade80","#84cc16","#eab308","#f97316"][i];
+ if(topMarkers){
+        topMarkers.forEach(m => map.removeLayer(m));
+    }
 
+    topMarkers = [];
+
+    puntos.slice(0,5).forEach((p,i)=>{
         const marker = L.circleMarker([p.lat,p.lng],{
             radius:10,
             color:"#fff",
@@ -673,6 +680,24 @@ function calcularTop5(lat, lng){
     }
 
     mostrarMapaRentabilidad(puntos);
+}
+        function mostrarMapaRentabilidad(puntos){
+
+    if(zonasRentablesLayer){
+        map.removeLayer(zonasRentablesLayer);
+    }
+
+    const heatData = puntos.map(p => [
+        p[0],
+        p[1],
+        p[2]
+    ]);
+
+    zonasRentablesLayer = L.heatLayer(heatData,{
+        radius:35,
+        blur:25,
+        maxZoom:16
+    }).addTo(map);
 }
         // ==========================================
         // ANÁLISIS PRINCIPAL
@@ -783,38 +808,7 @@ mostrarTop5();
                 toggleLoading(false);
             }
         }
-async function escanearMapa() {
 
-    const bounds = map.getBounds();
-
-    const south = bounds.getSouth();
-    const north = bounds.getNorth();
-    const west = bounds.getWest();
-    const east = bounds.getEast();
-
-    const step = 0.01; // distancia entre puntos (~1km)
-
-    const puntos = [];
-
-    for(let lat = south; lat <= north; lat += step){
-        for(let lng = west; lng <= east; lng += step){
-
-            const input = {
-                competidores: Math.floor(Math.random()*10),
-                densidad: Math.floor(Math.random()*5000)+2000,
-                renta: Math.floor(Math.random()*20000)+6000,
-                seguridad: Math.random(),
-                flujo: Math.floor(Math.random()*800)
-            };
-
-            const score = randomForestPredict(input);
-
-            puntos.push([lat,lng,score]);
-        }
-    }
-
-    mostrarMapaRentabilidad(puntos);
-}
         // ==========================================
         // UI DE RESULTADOS Y COMPARATIVA
         // ==========================================

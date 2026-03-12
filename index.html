@@ -362,6 +362,7 @@
             });
 
             map.once('locationerror', function(e) {
+                const btn = document.getElementById("btn-locate");
                 btn.innerHTML = '<i data-lucide="crosshair" class="w-5 h-5"></i>';
                 lucide.createIcons();
                 showToast("No se pudo obtener la ubicación", "error");
@@ -769,12 +770,10 @@ calcularTop5(lat,lng);
                 
                 document.getElementById("comp-score-A").innerText = results.A.score + "%";
                 document.getElementById("comp-score-A").className = `text-3xl font-extrabold ${results.A.score >= 75 ? 'text-emerald-600' : (results.A.score >= 50 ? 'text-amber-500' : 'text-red-500')}`;
-                document.getElementById("comp-dens-A").innerText = `Competencia: ${results.A.inputs.competidores}`;
-
+             
                 document.getElementById("comp-score-B").innerText = results.B.score + "%";
                 document.getElementById("comp-score-B").className = `text-3xl font-extrabold ${results.B.score >= 75 ? 'text-emerald-600' : (results.B.score >= 50 ? 'text-amber-500' : 'text-red-500')}`;
-                document.getElementById("comp-dens-B").innerText = `Competencia: ${results.B.inputs.competidores}`;
-
+              
                 const diff = results.A.score - results.B.score;
                 const verdict = document.getElementById("comparison-verdict");
                 if(Math.abs(diff) < 5) {
@@ -802,35 +801,29 @@ calcularTop5(lat,lng);
         // ==========================================
         // SIMULADOR FINANCIERO
         // ==========================================
-        function updateSimTextOnly() {
-            document.getElementById('val-inversion').innerText = formatter.format(document.getElementById('input-inversion').value);
-            document.getElementById('val-ventas').innerText = formatter.format(document.getElementById('input-ventas').value);
-        }
+        function updateSim(){
 
-        function updateSim() {
-            updateSimTextOnly();
+    updateSimTextOnly();
 
-            const inversion = parseFloat(document.getElementById('input-inversion').value);
-            const ventas = parseFloat(document.getElementById('input-ventas').value);
-            
-            const margen = businessData[currentBusiness].margen || 0.25;
-            
-            // Score actual (si existe) para mostrar en el helper
-            const activeRes = results[currentPoint] || results.A || results.B;
-            const scoreDisplay = activeRes ? activeRes.score : 50;
-            document.getElementById('sim-score-text').innerText = scoreDisplay + "%";
+    const inversion = parseFloat(document.getElementById('input-inversion').value);
+    const ventas = parseFloat(document.getElementById('input-ventas').value);
 
-            // Utilidad = (Ventas * Margen Operativo) - Renta
-            const utilidadMensual = (ventas * margen) - renta;
-            
-            const valUtilidad = document.getElementById('val-utilidad');
-            if (utilidadMensual > 0) {
-                valUtilidad.innerText = formatter.format(utilidadMensual);
-                valUtilidad.className = "text-lg font-extrabold text-emerald-600";
-            } else {
-                valUtilidad.innerText = formatter.format(utilidadMensual);
-                valUtilidad.className = "text-lg font-extrabold text-red-600";
-            }
+    const margen = businessData[currentBusiness].margen || 0.25;
+
+    const utilidadMensual = ventas * margen;
+
+    const roiAnual = ((utilidadMensual * 12) / inversion) * 100;
+
+    const roiResult = document.getElementById('roi-result');
+
+    if(roiAnual > 0){
+        roiResult.innerText = roiAnual.toFixed(1) + "%";
+        roiResult.className = "text-lg font-extrabold text-emerald-600";
+    }else{
+        roiResult.innerText = "0%";
+        roiResult.className = "text-lg font-extrabold text-red-600";
+    }
+}
 
             // ROI = (Utilidad Anual / Inversión) * 100
             let roiAnual = 0;

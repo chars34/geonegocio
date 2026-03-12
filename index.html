@@ -619,34 +619,40 @@ function calcularTop5(lat, lng){
 
     topLocations = candidatos.slice(0,5);
 }
-        function mostrarTop5(){
+     function mostrarTop5(){
 
-    topLocations.forEach((p,i)=>{
-
-        const color = ["#22c55e","#4ade80","#84cc16","#eab308","#f97316"][i];
- if(topMarkers){
+    // eliminar markers anteriores
+    if(topMarkers){
         topMarkers.forEach(m => map.removeLayer(m));
     }
 
     topMarkers = [];
 
-    puntos.slice(0,5).forEach((p,i)=>{
+    topLocations.slice(0,5).forEach((p,i)=>{
+
+        const colores = [
+            "#22c55e",
+            "#4ade80",
+            "#84cc16",
+            "#eab308",
+            "#f97316"
+        ];
+
         const marker = L.circleMarker([p.lat,p.lng],{
             radius:10,
             color:"#fff",
             weight:2,
-            fillColor:color,
+            fillColor:colores[i],
             fillOpacity:0.9
-        });
+        }).addTo(map);
 
         marker.bindPopup(`
-        ⭐ <b>Top ${i+1} ubicación</b><br>
-        Score: ${p.score}%<br>
-        Potencial comercial alto
+            ⭐ <b>Top ${i+1} ubicación</b><br>
+            Score: ${p.score}%<br>
+            Potencial comercial alto
         `);
 
-        marker.addTo(map);
-
+        topMarkers.push(marker);
     });
 }
       async function escanearMapa() {

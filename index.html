@@ -484,11 +484,51 @@
                         score += weights[key] * locationData[key];
                     }
                 });
+const codigo = mapaSCIAN[currentBusiness] || '';
+const url = `${API_URL}?lat=${lat}&lng=${lng}&radio=500&codigo=${codigo}`;
 
-                score = random(75, 92); // Forzado para mockup
+const res = await fetch(url);
+const data = await res.json();
 
-                mostrarResultado(score);
-                map.flyTo([lat, lng], 14, { duration: 1.0 });
+const negociosReales = data.negocios || [];
+
+// limpiar markers
+markersCluster.clearLayers();
+
+// crear heatmap (una sola vez)
+const heatPoints = negociosReales
+    .filter(n => n.latitud && n.longitud)
+    .map(n => [n.latitud, n.longitud, 0.5]);
+
+if (heatLayer) map.removeLayer(heatLayer);
+
+heatLayer = L.heatLayer(heatPoints, {
+    radius: 25,
+    blur: 20
+}).addTo(map);
+
+// crear markers
+negociosReales.forEach(n => {
+
+    if(!n.latitud || !n.longitud) return;
+
+     const marker = L.circleMarker([n.latitud, n.longitud], {
+        radius: 6,
+        color: "#dc2626",
+        fillColor: "#ef4444",
+        fillOpacity: 0.8
+    });
+
+    markersCluster.addLayer(marker);
+
+});
+
+// score mock
+score = random(75, 92);
+
+mostrarResultado(score);
+
+map.flyTo([lat, lng], 14, { duration: 1.0 });
 
             } catch (err) {
                 console.error(err);

@@ -117,7 +117,19 @@
             <section id="view-map" class="absolute inset-0 flex flex-col transition-opacity duration-300">
                 <div class="flex-1 relative w-full h-full z-0" id="map-container">
                     <div id="map" class="absolute inset-0"></div>
-                    
+                  <div id="recomendaciones"
+style="
+position:absolute;
+top:20px;
+right:20px;
+background:white;
+padding:12px;
+border-radius:10px;
+box-shadow:0 4px 10px rgba(0,0,0,0.2);
+font-size:14px;
+width:200px;
+z-index:999;
+"></div>
                     <!-- Loading Overlay -->
                     <div id="loading-overlay" class="absolute inset-0 bg-white/70 backdrop-blur-[2px] z-[1000] hidden flex-col items-center justify-center">
                         <div class="bg-white p-4 rounded-xl shadow-xl flex flex-col items-center">
@@ -589,71 +601,150 @@ let zonasRentablesLayer = null;
             const suma = trees.reduce((a,b)=>a+b,0);
             return suma / trees.length;
         }
-function calcularTop5(lat, lng){
+function calcularTop5(lat,lng){
 
-    let candidatos = [];
+    topLocations = [];
 
-    for(let i=0;i<30;i++){
+    for(let i=0;i<5;i++){
 
-        const newLat = lat + (Math.random() - 0.5) * 0.01;
-        const newLng = lng + (Math.random() - 0.5) * 0.01;
+        const offsetLat = (Math.random() - 0.5) * 0.01;
+        const offsetLng = (Math.random() - 0.5) * 0.01;
 
-        const input = {
-            competidores: Math.floor(Math.random()*12),
-            densidad: Math.floor(Math.random()*5000)+1500,
-            renta: Math.floor(Math.random()*20000)+5000,
-            seguridad: Math.random(),
-            flujo: Math.floor(Math.random()*600)
-        };
+        const score = Math.floor(Math.random()*20)+75;
 
-        const score = Math.round(randomForestPredict(input)*100);
-
-        candidatos.push({
-            lat:newLat,
-            lng:newLng,
-            score:score
+        topLocations.push({
+            lat: lat + offsetLat,
+            lng: lng + offsetLng,
+            score: score
         });
     }
 
-    candidatos.sort((a,b)=>b.score-a.score);
-
-    topLocations = candidatos.slice(0,5);
+    mostrarTop5();
 }
-     function mostrarTop5(){
+function mostrarTop5(){
 
-    // eliminar markers anteriores
     if(topMarkers){
         topMarkers.forEach(m => map.removeLayer(m));
     }
 
     topMarkers = [];
 
-    topLocations.slice(0,5).forEach((p,i)=>{
-
-        const colores = [
-            "#22c55e",
-            "#4ade80",
-            "#84cc16",
-            "#eab308",
-            "#f97316"
-        ];
+    topLocations.forEach((p,i)=>{
 
         const marker = L.circleMarker([p.lat,p.lng],{
-            radius:10,
+            radius: i==0 ? 14 : 10,
             color:"#fff",
             weight:2,
-            fillColor:colores[i],
+            fillColor:"#22c55e",
             fillOpacity:0.9
         }).addTo(map);
 
         marker.bindPopup(`
             ⭐ <b>Top ${i+1} ubicación</b><br>
-            Score: ${p.score}%<br>
-            Potencial comercial alto
+            Score: ${p.score}%
         `);
 
         topMarkers.push(marker);
     });
+}
+        function limpiarMapa(){
+
+    // limpiar marcadores DENUE
+    if(markersCluster){
+        markersCluster.clearLayers();
+    }
+
+    // limpiar heatmap
+    if(heatLayer){
+        map.removeLayer(heatLayer);
+        heatLayer = null;
+    }
+
+    // limpiar TOP 5
+    if(topMarkers){
+        topMarkers.forEach(m => map.removeLayer(m));
+        topMarkers = [];
+    }
+
+    // limpiar marcador de análisis
+    if(userMarker){
+        map.removeLayer(userMarker);
+        userMarker = null;
+    }
+
+}
+        function limpiarMapa(){
+
+    // limpiar marcadores DENUE
+    if(markersCluster){
+        markersCluster.clearLayers();
+    }
+
+    // limpiar heatmap
+    if(heatLayer){
+        map.removeLayer(heatLayer);
+        heatLayer = null;
+    }
+
+    // limpiar TOP 5
+    if(topMarkers){
+        topMarkers.forEach(m => map.removeLayer(m));
+        topMarkers = [];
+    }
+
+    // limpiar marcador de análisis
+    if(userMarker){
+        map.removeLayer(userMarker);
+        userMarker = null;
+    }
+
+}
+        function sugerirNegocio(negocios){
+
+    const conteo = {};
+
+    negocios.forEach(n=>{
+        const act = n.codigo_act || "otros";
+
+        if(!conteo[act]){
+            conteo[act] = 0;
+        }
+
+        conteo[act]++;
+    });
+
+    const lista = Object.entries(conteo)
+        .map(([codigo,total])=>({
+            codigo,
+            total
+        }))
+        .sort((a,b)=>a.total - b.total); // menos competencia primero
+
+    const sugerencias = lista.slice(0,3);
+
+    mostrarSugerencias(sugerencias);
+}
+        function mostrarSugerencias(lista){
+
+    const div = document.getElementById("recomendaciones");
+
+    if(!div) return;
+
+    let html = "<h3>🤖 IA recomienda abrir:</h3>";
+
+    lista.forEach((s,i)=>{
+
+        const medal = i==0 ? "🥇" : i==1 ? "🥈" : "🥉";
+
+        html += `
+        <div style="padding:6px">
+            ${medal} Giro ${s.codigo}<br>
+            Competencia cercana: ${s.total}
+        </div>
+        `;
+    });
+
+    div.innerHTML = html;
 }
       async function escanearMapa() {
 
@@ -709,6 +800,7 @@ function calcularTop5(lat, lng){
         // ANÁLISIS PRINCIPAL
         // ==========================================
         async function analyzeLocation() {
+            
             let lat, lng;
             let isA = currentPoint === "A";
             let mColor = isA ? "#ef4444" : "#10b981";
@@ -729,7 +821,7 @@ function calcularTop5(lat, lng){
                 if (circleB) map.removeLayer(circleB);
                 circleB = L.circle([lat, lng], { radius: 500, color: mColor, weight: 2, fillColor: mColor, fillOpacity: 0.1, dashArray: '5, 5' }).addTo(map);
             }
-
+limpiarMapa();
             toggleLoading(true);
 
             try {
@@ -759,7 +851,7 @@ function calcularTop5(lat, lng){
                 clearTimeout(timeoutId);
 
                 const negociosReales = data.negocios || [];
-
+sugerirNegocio(negociosReales);
                 // Renderizar Calor y Clusters si es el punto activo
                 markersCluster.clearLayers();
                 if (heatLayer) map.removeLayer(heatLayer);

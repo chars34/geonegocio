@@ -68,7 +68,6 @@
     display: inline-block;
 }
 
-}
         .app-container {
             max-width: 480px;
             margin: 0 auto;
@@ -481,8 +480,8 @@
                 map.removeLayer(userMarker);
                 userMarker = null;
             }
-            onst div = document.getElementById("recomendaciones");
-    if (div) div.classList.remove('active'); // Esconde el panel
+            const div = document.getElementById("recomendaciones");
+            if (div) div.classList.remove('active'); // Esconde el panel
         }
 
         function sugerirNegocio(negocios){

@@ -392,7 +392,7 @@
 
             map.once('locationerror', function(e) {
                 const btn = document.getElementById("btn-locate");
-                btn.innerHTML = '<i data-lucide="crosshair" class="w-5 h-5"></i>';
+               btn.innerHTML = '<div class="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>';
                 lucide.createIcons();
                 showToast("No se pudo obtener la ubicación", "error");
             });
@@ -472,9 +472,9 @@
 }
 
         function mostrarTop5(){
-            if(topMarkers){
-                topMarkers.forEach(m => map.removeLayer(m));
-            }
+          if(Array.isArray(topMarkers)){
+    topMarkers.forEach(m => map.removeLayer(m));
+}
             topMarkers = [];
             topLocations.forEach((p,i)=>{
                 const marker = L.circleMarker([p.lat,p.lng],{
@@ -559,7 +559,7 @@
                         </div>
                         <div class="text-right">
                             <p class="text-[10px] text-slate-500 uppercase font-bold">Competencia</p>
-                            <p class="text-sm font-bold text-slate-700">${lista.length} locales</p>
+                            <p class="text-sm font-bold text-slate-700">${results[currentPoint]?.inputs?.competidores || 0} locales</p>
                         </div>
                     </div>
                 </div>
@@ -588,7 +588,7 @@
                         flujo: Math.floor(Math.random()*800)
                     };
                     const score = randomForestPredict(input);
-                    puntos.push([lat,lng,score]);
+                  puntos.push([lat,lng,score/100]);
                 }
             }
             mostrarMapaRentabilidad(puntos);
@@ -655,10 +655,13 @@
                 }
                 clearTimeout(timeoutId);
 
+              
                 const negociosReales = data.negocios || [];
-                const negociosReales = data.negocios || [];
+                const modelInput = calcularVariablesReales(negociosReales, lat, lng);
                 markersCluster.clearLayers();
-                if (heatLayer) map.removeLayer(heatLayer);
+               if (heatLayer && map.hasLayer(heatLayer)){
+    map.removeLayer(heatLayer);
+}
 
                 if(negociosReales.length > 0) {
                    const heatPoints = negociosReales
@@ -700,6 +703,31 @@
                 toggleLoading(false);
             }
         }
+       function estimarVariables(lat,lng){
+    return {
+        competidores: Math.floor(Math.random()*10),
+        densidad: 2000 + Math.random()*3000,
+        flujo: 100 + Math.random()*500,
+        seguridad: 0.5 + Math.random()*0.4,
+        accesibilidad: 0.5,
+        zonaComercial: 0.5,
+        ingresoPromedio: 0.5
+    };
+}
+        function distancia(a,b){
+    const R = 6371000;
+
+    const dLat = (b.latitud-a.latitud) * Math.PI/180;
+    const dLng = (b.longitud-a.longitud) * Math.PI/180;
+
+    const lat1 = a.latitud * Math.PI/180;
+    const lat2 = b.latitud * Math.PI/180;
+
+    const x = Math.sin(dLat/2)**2 +
+              Math.sin(dLng/2)**2 * Math.cos(lat1)*Math.cos(lat2);
+
+    return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
         function generarMapaRentabilidad(){
 
     const bounds = map.getBounds();
@@ -714,7 +742,7 @@
 
             const score = calcularScore(variables);
 
-            puntos.push([lat,lng,score]);
+     puntos.push([lat,lng,score/100]);
         }
     }
 

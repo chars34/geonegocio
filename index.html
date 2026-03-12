@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoBusiness Pro - Puebla</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    
+    <!-- Leaflet MarkerCluster (Para estilo Pro) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    
+    <!-- Leaflet Heatmap -->
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    
+    <!-- Chart.js para gráficos Pro -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f1f5f9; /* slate-100 */
+        }
+
+        /* Colores Corporativos Premium */
+        .bg-brand-primary { background-color: #0f172a; } /* slate-900 */
+        .bg-brand-secondary { background-color: #3b82f6; } /* blue-500 */
+        .text-brand-primary { color: #0f172a; }
+        .text-brand-secondary { color: #3b82f6; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Efecto Glassmorphism sutil */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* MarkerCluster Custom Styles */
+        .marker-cluster-small { background-color: rgba(239, 68, 68, 0.6); }
+        .marker-cluster-small div { background-color: rgba(239, 68, 68, 0.8); color: white; }
+        .marker-cluster-medium { background-color: rgba(220, 38, 38, 0.6); }
+        .marker-cluster-medium div { background-color: rgba(220, 38, 38, 0.8); color: white; }
+        .marker-cluster-large { background-color: rgba(185, 28, 28, 0.6); }
+        .marker-cluster-large div { background-color: rgba(185, 28, 28, 0.8); color: white; font-weight: bold; }
+
+        /* Animación para el Toast */
+        @keyframes slideInUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-enter { animation: slideInUp 0.3s ease-out forwards; }
+    </style>
+</head>
+
+<body class="text-slate-800 antialiased h-screen flex flex-col overflow-hidden">
+
+    <!-- Top Navigation -->
+    <header class="bg-brand-primary text-white h-16 flex items-center justify-between px-6 shadow-md z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-500 p-2 rounded-lg">
+                <i data-lucide="map" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-wide">GeoBusiness <span class="text-blue-400 font-light">PRO</span></h1>
+            </div>
+        </div>
+        <div class="flex items-center gap-4 text-sm font-medium text-slate-300">
+            <div class="flex items-center gap-1"><i data-lucide="map-pin" class="w-4 h-4"></i> Puebla, MX</div>
+            <div class="flex items-center gap-1 text-green-400"><i data-lucide="activity" class="w-4 h-4"></i> API Online</div>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Sidebar Izquierdo: Configuración -->
+        <aside class="w-80 bg-white shadow-xl z-10 flex flex-col overflow-y-auto shrink-0 border-r border-slate-200">
+            <div class="p-5 border-b border-slate-100">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i data-lucide="store" class="w-4 h-4"></i> 1. Sector Comercial
+                </h2>
+                <div id="business-list" class="space-y-2">
+                    <!-- Botones generados por JS -->
+                </div>
+            </div>
+
+            <div class="p-5 border-b border-slate-100 flex-1">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i data-lucide="target" class="w-4 h-4"></i> 2. Análisis Espacial
+                </h2>
+                
+                <p class="text-xs text-slate-500 mb-4">Selecciona el punto que deseas configurar y haz clic en el mapa.</p>
+                
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button onclick="setPoint('A')" id="btn-point-A" class="py-2.5 px-3 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-700 font-semibold text-sm transition-all hover:bg-blue-100 flex items-center justify-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-blue-500"></div> Punto A
+                    </button>
+                    <button onclick="setPoint('B')" id="btn-point-B" class="py-2.5 px-3 rounded-xl border-2 border-slate-200 bg-white text-slate-600 font-semibold text-sm transition-all hover:border-purple-500 hover:text-purple-700 flex items-center justify-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-purple-500"></div> Punto B
+                    </button>
+                </div>
+
+                <div class="space-y-3">
+                    <button onclick="analyzeLocation()" class="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition-colors flex justify-center items-center gap-2 shadow-lg hover:shadow-xl">
+                        <i data-lucide="cpu" class="w-5 h-5"></i> Procesar Zona Actual
+                    </button>
+                    <button onclick="buscarMejorZona()" class="w-full bg-white border border-slate-300 text-slate-700 py-3 rounded-xl font-semibold hover:bg-slate-50 transition-colors flex justify-center items-center gap-2">
+                        <i data-lucide="radar" class="w-5 h-5 text-green-600"></i> Auto-Detectar Zona
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-5 bg-slate-50">
+                <button onclick="resetMapaYResultados()" class="w-full text-slate-500 hover:text-red-500 text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> Limpiar Análisis
+                </button>
+            </div>
+        </aside>
+
+        <!-- Centro: Mapa -->
+        <main class="flex-1 relative bg-slate-200">
+            <div id="map" class="absolute inset-0 z-0"></div>
+            
+            <!-- Overlay de carga -->
+            <div id="loading-overlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-[1000] hidden flex-col items-center justify-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-secondary mb-4"></div>
+                <p class="text-brand-primary font-semibold animate-pulse">Analizando densidad comercial y variables...</p>
+            </div>
+        </main>
+
+        <!-- Sidebar Derecho: Resultados y Finanzas -->
+        <aside class="w-96 bg-white shadow-xl z-10 flex flex-col overflow-y-auto shrink-0 border-l border-slate-200">
+            
+            <!-- Tablero de Resultados -->
+            <div class="p-5 border-b border-slate-100 min-h-[50%]">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i data-lucide="bar-chart-2" class="w-4 h-4"></i> 3. Inteligencia de Sitio
+                </h2>
+
+                <!-- Placeholder inicial -->
+                <div id="result-placeholder" class="h-48 flex flex-col items-center justify-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                    <i data-lucide="map" class="w-10 h-10 mb-3 opacity-50"></i>
+                    <p class="text-sm px-6 text-center">Ejecuta un análisis para ver el score de viabilidad y métricas.</p>
+                </div>
+
+                <!-- Contenido de Resultados (Oculto inicio) -->
+                <div id="result-content" class="hidden">
+                    <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 text-white shadow-lg mb-5 relative overflow-hidden">
+                        <!-- Círculos decorativos -->
+                        <div class="absolute -right-6 -top-6 w-24 h-24 bg-white opacity-5 rounded-full"></div>
+                        <div class="absolute right-10 -bottom-10 w-20 h-20 bg-white opacity-5 rounded-full"></div>
+                        
+                        <div class="text-center relative z-10">
+                            <div class="text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest mb-1">Score de Viabilidad</div>
+                            <div class="text-5xl font-black mb-2 flex items-center justify-center gap-2" id="score-text">
+                                0%
+                            </div>
+                            <!-- Barra de progreso miniatura -->
+                            <div class="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                                <div id="score-bar" class="h-full bg-green-400 transition-all duration-1000 ease-out" style="width:0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico de Radar -->
+                    <div class="mb-5 h-48 w-full">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+
+                    <div id="variable-list" class="space-y-2 text-sm"></div>
+                </div>
+            </div>
+
+            <!-- Simulador Financiero -->
+            <div class="p-5 bg-slate-50 flex-1">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i data-lucide="calculator" class="w-4 h-4"></i> Simulador Financiero
+                </h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Inversión Inicial (MXN)</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-slate-400">$</span>
+                            <input type="number" id="input-inversion" value="350000" class="w-full border border-slate-300 rounded-xl pl-8 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-shadow bg-white">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Ventas Mensuales Estimadas (MXN)</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-slate-400">$</span>
+                            <input type="number" id="input-ventas" value="120000" class="w-full border border-slate-300 rounded-xl pl-8 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-shadow bg-white">
+                        </div>
+                    </div>
+
+                    <button onclick="calculateROI()" class="w-full bg-green-600 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-green-700 transition-colors shadow-md hover:shadow-lg mt-2 flex justify-center items-center gap-2">
+                        <i data-lucide="trending-up" class="w-4 h-4"></i> Proyectar Retorno
+                    </button>
+
+                    <div id="roi-result" class="mt-4"></div>
+                </div>
+            </div>
+
+        </aside>
+    </div>
+
+    <!-- Contenedor de Toasts -->
+    <div id="toast-container" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        // ==========================================
+        // CONFIGURACIÓN DE DATOS SCIAN Y PESOS
+        // ==========================================
+        const businessWeights = {
+            'abarrotes': { peatonal: 0.30, competencia: 0.25, nivel: 0.10, seguridad: 0.10, renta: 0.10, accesibilidad: 0.10, tendencia: 0.05 },
+            'supermercado': { peatonal: 0.20, competencia: 0.30, nivel: 0.15, seguridad: 0.10, renta: 0.10, accesibilidad: 0.10, tendencia: 0.05 },
+            'conveniencia': { peatonal: 0.35, competencia: 0.25, nivel: 0.10, seguridad: 0.10, renta: 0.10, accesibilidad: 0.05, tendencia: 0.05 },
+            'farmacia': { peatonal: 0.15, competencia: 0.25, nivel: 0.10, seguridad: 0.20, renta: 0.10, accesibilidad: 0.10, tendencia: 0.10 },
+            'restaurante': { peatonal: 0.25, competencia: 0.20, nivel: 0.15, seguridad: 0.10, renta: 0.10, accesibilidad: 0.10, tendencia: 0.10 },
+            'cafe': { peatonal: 0.30, competencia: 0.15, nivel: 0.20, seguridad: 0.10, renta: 0.10, accesibilidad: 0.10, tendencia: 0.05 },
+            'gimnasio': { peatonal: 0.20, competencia: 0.20, nivel: 0.20, seguridad: 0.15, renta: 0.10, accesibilidad: 0.10, tendencia: 0.05 },
+            'taller mecanico': { peatonal: 0.10, competencia: 0.25, nivel: 0.10, seguridad: 0.15, renta: 0.20, accesibilidad: 0.15, tendencia: 0.05 }
+        };
+
+        const mapaSCIAN = {
+            'abarrotes': '461110', 'supermercado': '462111', 'conveniencia': '462112',
+            'farmacia': '464111', 'restaurante': '722511', 'cafe': '722515',
+            'gimnasio': '713940', 'taller mecanico': '811111'
+        };
+
+        // ==========================================
+        // VARIABLES GLOBALES
+        // ==========================================
+        let map;
+        let markersCluster; // Instancia de MarkerCluster
+        let markerA = null;
+        let markerB = null;
+        let circleA = null;
+        let circleB = null;
+        let heatLayer = null;
+        let radarChartInstance = null;
+        
+        let currentBusiness = "restaurante";
+        let currentPoint = "A";
+        let pointA_Score = null;
+        let pointB_Score = null;
+        
+        const locationData = { peatonal: 0, competencia: 0, nivel: 0, seguridad: 0, renta: 0, accesibilidad: 0, tendencia: 0 };
+        const API_URL = "http://localhost:3000/api/denue"; // Asegúrate de que apunte a tu server.js
+
+        // ==========================================
+        // UTILIDADES Y UI
+        // ==========================================
+        const random = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = "bg-slate-800";
+            let icon = `<i data-lucide="info" class="w-4 h-4 text-blue-400"></i>`;
+            
+            if(type === 'success') { bgClass = "bg-green-800"; icon = `<i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i>`; }
+            if(type === 'warning') { bgClass = "bg-yellow-800"; icon = `<i data-lucide="alert-triangle" class="w-4 h-4 text-yellow-400"></i>`; }
+            if(type === 'error') { bgClass = "bg-red-800"; icon = `<i data-lucide="x-circle" class="w-4 h-4 text-red-400"></i>`; }
+
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-white text-sm font-medium toast-enter ${bgClass} border border-white/10 backdrop-blur-md`;
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            lucide.createIcons({root: toast});
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(100%)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function toggleLoading(show) {
+            document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+        }
+
+        // ==========================================
+        // INICIALIZACIÓN
+        // ==========================================
+        window.onload = () => {
+            initBusinessButtons();
+            initMap();
+            initChart();
+            lucide.createIcons();
+        };
+
+        function initBusinessButtons() {
+            const list = document.getElementById("business-list");
+            list.innerHTML = "";
+            const negocios = Object.keys(businessWeights);
+
+            negocios.forEach(name => {
+                const btn = document.createElement("button");
+                const isActive = name === currentBusiness;
+
+                btn.className = `w-full p-3 rounded-xl font-medium text-sm transition-all duration-200 text-left px-4 flex justify-between items-center border 
+                    ${isActive 
+                        ? 'bg-brand-primary text-white border-brand-primary shadow-md' 
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400 hover:bg-slate-50'
+                    }`;
+
+                btn.innerHTML = `
+                    <span class="capitalize">${name}</span>
+                    ${isActive ? '<i data-lucide="check" class="w-4 h-4 text-blue-400"></i>' : ''}
+                `;
+
+                btn.onclick = () => {
+                    currentBusiness = name;
+                    resetMapaYResultados();
+                    initBusinessButtons();
+                    lucide.createIcons();
+                    showToast(`Sector cambiado a: ${name}`, 'info');
+                };
+                list.appendChild(btn);
+            });
+        }
+
+        // ==========================================
+        // LÓGICA DEL MAPA
+        // ==========================================
+        function initMap() {
+            map = L.map('map', { zoomControl: false }).setView([19.0433, -98.2019], 14);
+
+            // Estilo de mapa profesional (CartoDB Positron)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            }).addTo(map);
+
+            // Control de zoom en otra posición
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            // Inicializar MarkerCluster
+            markersCluster = L.markerClusterGroup({
+                chunkedLoading: true,
+                maxClusterRadius: 50
+            });
+            map.addLayer(markersCluster);
+
+            map.on('click', function(e) {
+                if (currentPoint === "A") {
+                    if (markerA) map.removeLayer(markerA);
+                    markerA = crearMarcadorAnimado(e.latlng, 'blue', 'A');
+                } else {
+                    if (markerB) map.removeLayer(markerB);
+                    markerB = crearMarcadorAnimado(e.latlng, 'purple', 'B');
+                }
+                showToast(`Punto ${currentPoint} establecido en el mapa.`, 'success');
+            });
+        }
+
+        function crearMarcadorAnimado(latlng, color, label) {
+            const markerHtmlStyles = `
+                background-color: ${color === 'blue' ? '#3b82f6' : '#a855f7'};
+                width: 2rem; height: 2rem;
+                display: flex; align-items: center; justify-content: center;
+                color: white; font-weight: bold; border-radius: 50%;
+                border: 3px solid white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+            `;
+            const icon = L.divIcon({
+                className: "custom-pin",
+                iconAnchor: [16, 16],
+                html: `<div style="${markerHtmlStyles}">${label}</div>`
+            });
+            return L.marker(latlng, { draggable: true, icon: icon }).addTo(map);
+        }
+
+        function setPoint(point) {
+            currentPoint = point;
+            
+            // UI Update
+            const btnA = document.getElementById('btn-point-A');
+            const btnB = document.getElementById('btn-point-B');
+            
+            if(point === 'A') {
+                btnA.className = "py-2.5 px-3 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-700 font-semibold text-sm transition-all flex items-center justify-center gap-2";
+                btnB.className = "py-2.5 px-3 rounded-xl border-2 border-slate-200 bg-white text-slate-600 font-semibold text-sm transition-all hover:border-purple-500 hover:text-purple-700 flex items-center justify-center gap-2";
+            } else {
+                btnB.className = "py-2.5 px-3 rounded-xl border-2 border-purple-500 bg-purple-50 text-purple-700 font-semibold text-sm transition-all flex items-center justify-center gap-2";
+                btnA.className = "py-2.5 px-3 rounded-xl border-2 border-slate-200 bg-white text-slate-600 font-semibold text-sm transition-all hover:border-blue-500 hover:text-blue-700 flex items-center justify-center gap-2";
+            }
+        }
+
+        function resetMapaYResultados() {
+            if (markerA) map.removeLayer(markerA);
+            if (markerB) map.removeLayer(markerB);
+            if (circleA) map.removeLayer(circleA);
+            if (circleB) map.removeLayer(circleB);
+            if (heatLayer) map.removeLayer(heatLayer);
+            
+            markersCluster.clearLayers();
+            
+            markerA = null; markerB = null;
+            circleA = null; circleB = null;
+            pointA_Score = null; pointB_Score = null;
+
+            document.getElementById("result-content").classList.add("hidden");
+            document.getElementById("result-placeholder").classList.remove("hidden");
+            document.getElementById("variable-list").innerHTML = "";
+            document.getElementById("roi-result").innerHTML = "";
+            
+            if(radarChartInstance) {
+                radarChartInstance.data.datasets[0].data = [0,0,0,0,0,0];
+                radarChartInstance.update();
+            }
+        }
+
+        // ==========================================
+        // ANÁLISIS Y CONEXIÓN BACKEND
+        // ==========================================
+        async function analyzeLocation() {
+            let lat, lng;
+
+            if (currentPoint === "A" && markerA) {
+                ({ lat, lng } = markerA.getLatLng());
+                if (circleA) map.removeLayer(circleA);
+                circleA = L.circle([lat, lng], { radius: 500, color: "#3b82f6", weight: 2, fillColor: "#3b82f6", fillOpacity: 0.1 }).addTo(map);
+            } else if (currentPoint === "B" && markerB) {
+                ({ lat, lng } = markerB.getLatLng());
+                if (circleB) map.removeLayer(circleB);
+                circleB = L.circle([lat, lng], { radius: 500, color: "#a855f7", weight: 2, fillColor: "#a855f7", fillOpacity: 0.1 }).addTo(map);
+            } else {
+                showToast("Primero selecciona un punto en el mapa.", "warning");
+                return;
+            }
+
+            toggleLoading(true);
+
+            try {
+                // LLAMADA A TU BACKEND MEJORADO
+                const codigo = mapaSCIAN[currentBusiness] || '';
+                const url = `${API_URL}?lat=${lat}&lng=${lng}&radio=500&codigo=${codigo}`;
+                
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("Error en servidor");
+                const data = await res.json();
+
+                const negociosReales = data.negocios || [];
+                
+                // Simulación inteligente de variables (para presentación)
+                simulateData();
+                
+                // Puntuación de competencia basada en datos reales
+                const competenciaReal = negociosReales.length;
+                locationData.competencia = Math.max(10, 100 - (competenciaReal * 5)); 
+
+                // Calcular Score Total
+                let weights = businessWeights[currentBusiness];
+                let score = 0;
+                Object.keys(weights).forEach(key => {
+                    score += weights[key] * locationData[key];
+                });
+
+                // Renderizar Elementos
+                mostrarNegociosEnMapa(negociosReales);
+                mostrarHeatmap(negociosReales);
+                mostrarResultado(score, currentPoint, data.metricas);
+                actualizarGrafico();
+                map.flyTo([lat, lng], 15, { duration: 1.5 });
+
+                showToast(`Análisis completado: ${negociosReales.length} competidores hallados.`, "success");
+
+            } catch (err) {
+                console.error(err);
+                showToast("Error al conectar con el servidor.", "error");
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        function mostrarNegociosEnMapa(negociosData) {
+            markersCluster.clearLayers();
+            
+            const customIcon = L.divIcon({
+                className: 'bg-transparent',
+                html: `<div class="w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-md"></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+
+            const marks = negociosData.map(n => {
+                const nombre = n.nombre || "Negocio Competidor";
+                const dist = n.distanciaMetros ? `${n.distanciaMetros}m` : '';
+                return L.marker([n.latitud, n.longitud], { icon: customIcon })
+                    .bindPopup(`
+                        <div class="font-bold text-slate-800 border-b pb-1 mb-1">${nombre}</div>
+                        <div class="text-xs text-slate-500">${n.direccion || ''}</div>
+                        <div class="text-xs font-semibold text-red-500 mt-1">Distancia: ${dist}</div>
+                    `);
+            });
+            
+            markersCluster.addLayers(marks);
+        }
+
+        function mostrarHeatmap(negociosData) {
+            if (heatLayer) map.removeLayer(heatLayer);
+            if (!negociosData || negociosData.length === 0) return;
+
+            const puntos = negociosData.map(n => [n.latitud, n.longitud, 1]);
+            heatLayer = L.heatLayer(puntos, {
+                radius: 30, blur: 20, maxZoom: 16,
+                gradient: { 0.4: 'blue', 0.6: 'lime', 0.8: 'yellow', 1.0: 'red' }
+            }).addTo(map);
+        }
+
+        function simulateData() {
+            locationData.peatonal = random(50, 95);
+            locationData.nivel = random(60, 90);
+            locationData.seguridad = random(55, 95);
+            locationData.renta = random(40, 85);
+            locationData.accesibilidad = random(60, 95);
+        }
+
+        // ==========================================
+        // RESULTADOS Y GRÁFICOS
+        // ==========================================
+        function mostrarResultado(score, puntoEvaluado, metricasBackend) {
+            const scoreFormatted = score.toFixed(1);
+            const bar = document.getElementById("score-bar");
+            const scoreText = document.getElementById("score-text");
+
+            let textColor = score >= 75 ? "text-green-400" : (score >= 50 ? "text-yellow-400" : "text-red-400");
+            let barColor = score >= 75 ? "bg-green-400" : (score >= 50 ? "bg-yellow-400" : "bg-red-400");
+
+            document.getElementById("result-placeholder").classList.add("hidden");
+            document.getElementById("result-content").classList.remove("hidden");
+
+            // Animar Barra y Texto
+            bar.className = `h-full transition-all duration-1000 ease-out ${barColor}`;
+            setTimeout(() => { bar.style.width = scoreFormatted + "%"; }, 50);
+            
+            scoreText.innerText = scoreFormatted + "%";
+            scoreText.className = `text-5xl font-black mb-2 flex items-center justify-center gap-2 ${textColor}`;
+
+            // Guardar Score
+            if (puntoEvaluado === "A") pointA_Score = score;
+            if (puntoEvaluado === "B") pointB_Score = score;
+
+            // Mostrar métricas del backend si existen
+            let metricasHtml = "";
+            if(metricasBackend) {
+                metricasHtml = `
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <div class="bg-slate-50 p-2 rounded-lg border border-slate-100 text-center">
+                            <div class="text-[0.65rem] text-slate-400 uppercase font-bold">Densidad</div>
+                            <div class="text-sm font-bold text-slate-700">${metricasBackend.densidadPorKm2} <span class="text-xs font-normal">/km²</span></div>
+                        </div>
+                        <div class="bg-slate-50 p-2 rounded-lg border border-slate-100 text-center">
+                            <div class="text-[0.65rem] text-slate-400 uppercase font-bold">Dist. Promedio</div>
+                            <div class="text-sm font-bold text-slate-700">${metricasBackend.distanciaPromedioMts} <span class="text-xs font-normal">mts</span></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.getElementById("variable-list").innerHTML = metricasHtml;
+            mostrarComparacion();
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            radarChartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Peatones', 'Competencia (Inversa)', 'Seguridad', 'Accesibilidad', 'Poder Adq.', 'Renta (Inversa)'],
+                    datasets: [{
+                        label: 'Evaluación del Punto',
+                        data: [0,0,0,0,0,0],
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { r: { min: 0, max: 100, ticks: { display: false } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function actualizarGrafico() {
+            if(radarChartInstance) {
+                radarChartInstance.data.datasets[0].data = [
+                    locationData.peatonal, 
+                    locationData.competencia, 
+                    locationData.seguridad, 
+                    locationData.accesibilidad, 
+                    locationData.nivel, 
+                    locationData.renta
+                ];
+                radarChartInstance.update();
+            }
+        }
+
+        function mostrarComparacion() {
+            if (pointA_Score !== null && pointB_Score !== null) {
+                let recomendacion, colorClass;
+                let dif = Math.abs(pointA_Score - pointB_Score).toFixed(1);
+
+                if (pointA_Score > pointB_Score) {
+                    recomendacion = `Punto A supera al Punto B por ${dif}%`;
+                    colorClass = "bg-blue-50 border-blue-200 text-blue-700";
+                } else if (pointB_Score > pointA_Score) {
+                    recomendacion = `Punto B supera al Punto A por ${dif}%`;
+                    colorClass = "bg-purple-50 border-purple-200 text-purple-700";
+                } else {
+                    recomendacion = `Empate técnico.`;
+                    colorClass = "bg-slate-100 border-slate-200 text-slate-700";
+                }
+
+                document.getElementById("variable-list").innerHTML += `
+                    <div class="mt-4 p-3 border rounded-xl text-center font-bold text-sm shadow-sm ${colorClass}">
+                        <i data-lucide="award" class="w-4 h-4 inline-block mr-1"></i> ${recomendacion}
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+        }
+
+        // ==========================================
+        // SIMULADOR FINANCIERO MEJORADO
+        // ==========================================
+        function calculateROI() {
+            const inversion = parseFloat(document.getElementById("input-inversion").value);
+            const ventas = parseFloat(document.getElementById("input-ventas").value);
+            const resultDiv = document.getElementById("roi-result");
+
+            if (!inversion || !ventas || inversion <= 0 || ventas <= 0) {
+                resultDiv.innerHTML = `<div class="p-2 bg-red-50 text-red-600 rounded text-xs border border-red-200">Ingresa valores válidos mayores a cero.</div>`;
+                return;
+            }
+
+            // Gastos simulados basados en promedios de industria
+            const cogs = ventas * 0.40; // Costo de venta
+            const renta = ventas * 0.12;
+            const operativos = ventas * 0.18;
+            const utilidadMensual = ventas - (cogs + renta + operativos);
+            
+            if (utilidadMensual <= 0) {
+                 resultDiv.innerHTML = `<div class="p-2 bg-red-50 text-red-600 rounded text-xs border border-red-200">El modelo proyecta pérdidas mensuales. Reevalúa tus ventas o gastos.</div>`;
+                return;
+            }
+
+            const roiAnual = (((utilidadMensual * 12) / inversion) * 100).toFixed(1);
+            const mesesRecup = Math.ceil(inversion / utilidadMensual);
+
+            resultDiv.innerHTML = `
+                <div class="space-y-2 mt-3">
+                    <div class="flex justify-between items-center p-3 bg-brand-primary text-white rounded-xl shadow-md">
+                        <span class="text-xs text-slate-300">Utilidad Neta Est.</span>
+                        <span class="font-bold text-green-400">$${utilidadMensual.toLocaleString('es-MX')} <span class="text-[0.6rem] font-normal text-slate-400">/mes</span></span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-white border border-slate-200 p-2.5 rounded-xl text-center shadow-sm">
+                            <div class="text-[0.65rem] text-slate-500 uppercase font-bold">Retorno (ROI)</div>
+                            <div class="font-black text-brand-secondary text-lg">${roiAnual}% <span class="text-xs font-normal text-slate-400">anual</span></div>
+                        </div>
+                        <div class="bg-white border border-slate-200 p-2.5 rounded-xl text-center shadow-sm">
+                            <div class="text-[0.65rem] text-slate-500 uppercase font-bold">Recuperación</div>
+                            <div class="font-black text-slate-700 text-lg">${mesesRecup} <span class="text-xs font-normal text-slate-400">meses</span></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // FUNCIÓN EXTRA: AUTO-DETECTAR (Simulada)
+        // ==========================================
+        async function buscarMejorZona() {
+            showToast("Calculando zonas óptimas en el radio de visión...", "info");
+            toggleLoading(true);
+            setTimeout(() => {
+                toggleLoading(false);
+                const bounds = map.getBounds();
+                const lat = bounds.getCenter().lat + (Math.random() - 0.5) * 0.01;
+                const lng = bounds.getCenter().lng + (Math.random() - 0.5) * 0.01;
+                
+                const greenIcon = L.divIcon({
+                    className: "custom-pin",
+                    iconAnchor: [16, 16],
+                    html: `<div style="background-color: #22c55e; width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);"><i data-lucide="star" class="w-4 h-4"></i></div>`
+                });
+
+                L.marker([lat, lng], { icon: greenIcon })
+                    .addTo(map)
+                    .bindPopup(`<b class="text-green-600">Alta Oportunidad</b><br>Baja competencia y alto tráfico peatonal estimado.`)
+                    .openPopup();
+                
+                L.circle([lat, lng], { radius: 300, color: "#22c55e", fillColor: "#22c55e", fillOpacity: 0.2 }).addTo(map);
+                map.setView([lat, lng], 15);
+                lucide.createIcons();
+                showToast("Zona recomendada encontrada.", "success");
+            }, 1500);
+        }
+    </script>
+</body>
+</html>

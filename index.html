@@ -137,15 +137,13 @@
                     </div>
 
                     <button onclick="locateUser()" class="absolute top-4 right-4 z-[400] bg-white p-2.5 rounded-full shadow-lg border border-slate-200 text-slate-700 hover:text-blue-600 focus:outline-none pulse-btn" id="btn-locate">
-                     <button onclick="analizarCiudad()" 
-class="absolute top-28 right-4 z-[400] bg-white p-2.5 rounded-full shadow-lg border border-slate-200 text-slate-700 hover:text-purple-600">
-<i data-lucide="brain-circuit" class="w-5 h-5"></i>
-</button>
-                        <button onclick="buscarMejorZona()" 
-class="absolute top-16 right-4 z-[400] bg-white p-2.5 rounded-full shadow-lg border border-slate-200 text-slate-700 hover:text-green-600">
-<i data-lucide="brain" class="w-5 h-5"></i>
-</button>
                         <i data-lucide="crosshair" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="analizarCiudad()" class="absolute top-28 right-4 z-[400] bg-white p-2.5 rounded-full shadow-lg border border-slate-200 text-slate-700 hover:text-purple-600">
+                        <i data-lucide="brain-circuit" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="buscarMejorZona()" class="absolute top-16 right-4 z-[400] bg-white p-2.5 rounded-full shadow-lg border border-slate-200 text-slate-700 hover:text-green-600">
+                        <i data-lucide="brain" class="w-5 h-5"></i>
                     </button>
                 </div>
 
@@ -785,7 +783,7 @@ updateSimTextOnly();
 
                 map.flyTo([lat, lng], 14, { duration: 0.8 });
                 calcularTop5(lat,lng);
-                sugerirNegocio(negociosReales); // Llamamos la sugerencia después de tener el score calculado
+                mostrarSugerencias(negociosReales); 
 const ranking = rankingGiros(lat,lng);
 
 console.log("TOP GIROS:", ranking);
@@ -1006,13 +1004,13 @@ function calcularVariablesReales(negocios, lat, lng){
            const saturacion = nivelSaturacion(inp.competidores);
             document.getElementById("metrics-grid").innerHTML = `
                 <div class="bg-slate-50 border border-slate-100 p-2.5 rounded-lg flex flex-col gap-1">
-<div class="bg-slate-50 border border-slate-100 p-2.5 rounded-lg flex flex-col gap-1">
-<span class="text-[0.65rem] text-slate-500 font-bold uppercase">Saturación</span>
-<div class="flex items-center gap-1.5 text-sm font-bold text-slate-700">
-${saturacion}
-</div>
-</div>
-              <span class="text-[0.65rem] text-slate-500 font-bold uppercase">Competidores</span>
+                    <span class="text-[0.65rem] text-slate-500 font-bold uppercase">Saturación</span>
+                    <div class="flex items-center gap-1.5 text-sm font-bold text-slate-700">
+                        ${saturacion}
+                    </div>
+                </div>
+                <div class="bg-slate-50 border border-slate-100 p-2.5 rounded-lg flex flex-col gap-1">
+                    <span class="text-[0.65rem] text-slate-500 font-bold uppercase">Competidores</span>
                     <div class="flex items-center gap-1.5 text-sm font-bold text-slate-700">
                         ${getIconInv(inp.competidores, [3, 8])} ${inp.competidores} en 500m
                     </div>

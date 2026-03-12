@@ -398,38 +398,78 @@
             });
         }
 
-        function randomForestPredict(x){
-            const tree1 = (x) => { if(x.competidores < 5 && x.densidad > 2000) return 0.9; if(x.competidores < 10) return 0.7; return 0.3; }
-            const tree2 = (x) => { if(x.renta > 10000 && x.seguridad > 0.7) return 0.85; if(x.renta > 7000) return 0.65; return 0.4; }
-            const tree3 = (x) => { if(x.flujo > 300) return 0.9; if(x.flujo > 100) return 0.7; return 0.5; }
-            const tree4 = (x) => { if(x.densidad > 4000) return 0.85; if(x.densidad > 2000) return 0.7; return 0.4; }
-            const tree5 = (x) => { if(x.competidores < 3) return 0.9; if(x.competidores < 8) return 0.6; return 0.3; }
-            const tree6 = (x) => { if(x.seguridad > 0.8) return 0.9; if(x.seguridad > 0.6) return 0.7; return 0.4; }
-            const tree7 = (x) => { if(x.renta > 15000) return 0.9; if(x.renta > 8000) return 0.7; return 0.5; }
-            const tree8 = (x) => { if(x.flujo > 500) return 0.95; if(x.flujo > 200) return 0.75; return 0.5; }
-            const tree9 = (x) => { if(x.densidad > 5000 && x.competidores < 10) return 0.9; return 0.5; }
-            const tree10 = (x)=> { if(x.seguridad > 0.75 && x.renta > 9000) return 0.85; return 0.6; }
+       function randomForestPredict(x){
 
-            const trees = [ tree1(x), tree2(x), tree3(x), tree4(x), tree5(x), tree6(x), tree7(x), tree8(x), tree9(x), tree10(x) ];
-            const suma = trees.reduce((a,b)=>a+b,0);
-            return suma / trees.length;
+    const scoreCompetencia =
+        x.competidores <= 3 ? 0.9 :
+        x.competidores <= 7 ? 0.7 :
+        x.competidores <= 12 ? 0.5 : 0.3;
+
+    const scoreDensidad =
+        x.densidad > 5000 ? 0.9 :
+        x.densidad > 3500 ? 0.75 :
+        x.densidad > 2000 ? 0.6 : 0.4;
+
+    const scoreFlujo =
+        x.flujo > 500 ? 0.9 :
+        x.flujo > 300 ? 0.75 :
+        x.flujo > 120 ? 0.6 : 0.45;
+
+    const scoreSeguridad =
+        x.seguridad > 0.8 ? 0.9 :
+        x.seguridad > 0.7 ? 0.75 :
+        x.seguridad > 0.6 ? 0.6 : 0.4;
+
+    const scoreRenta =
+        x.renta < 9000 ? 0.85 :
+        x.renta < 14000 ? 0.7 :
+        x.renta < 20000 ? 0.55 : 0.4;
+
+    const finalScore =
+        (scoreCompetencia * 0.25) +
+        (scoreDensidad * 0.20) +
+        (scoreFlujo * 0.25) +
+        (scoreSeguridad * 0.15) +
+        (scoreRenta * 0.15);
+
+    return finalScore;
+}
+
+      function calcularTop5(lat,lng){
+
+    const grid = [];
+    const step = 0.0025;
+
+    for(let i=-3;i<=3;i++){
+        for(let j=-3;j<=3;j++){
+
+            const newLat = lat + (i * step);
+            const newLng = lng + (j * step);
+
+            const input = {
+                competidores: Math.floor(Math.random()*10),
+                densidad: 2000 + Math.abs(i*j)*400,
+                renta: 7000 + Math.abs(i+j)*1200,
+                seguridad: 0.65 + Math.abs(i)*0.03,
+                flujo: 120 + Math.abs(i*j)*40
+            };
+
+            const score = Math.round(randomForestPredict(input)*100);
+
+            grid.push({
+                lat:newLat,
+                lng:newLng,
+                score
+            });
         }
+    }
 
-        function calcularTop5(lat,lng){
-            topLocations = [];
-            for(let i=0;i<5;i++){
-                const offsetLat = (Math.random() - 0.5) * 0.01;
-                const offsetLng = (Math.random() - 0.5) * 0.01;
-                const score = Math.floor(Math.random()*20)+75;
+    grid.sort((a,b)=>b.score-a.score);
 
-                topLocations.push({
-                    lat: lat + offsetLat,
-                    lng: lng + offsetLng,
-                    score: score
-                });
-            }
-            mostrarTop5();
-        }
+    topLocations = grid.slice(0,5);
+
+    mostrarTop5();
+}
 
         function mostrarTop5(){
             if(topMarkers){
@@ -468,21 +508,32 @@
             if (div) div.classList.remove('active');
         }
 
-        function sugerirNegocio(negocios){
-            const conteo = {};
-            negocios.forEach(n=>{
-                const act = n.codigo_act || "otros";
-                if(!conteo[act]) conteo[act] = 0;
-                conteo[act]++;
-            });
+       function sugerirNegocio(negocios){
 
-            const lista = Object.entries(conteo)
-                .map(([codigo,total])=>({codigo, total}))
-                .sort((a,b)=>a.total - b.total);
+    const total = negocios.length;
 
-            const sugerencias = lista.slice(0,3);
-            mostrarSugerencias(sugerencias);
-        }
+    let sugerido = currentBusiness;
+    let razon = "";
+
+    if(total > 12){
+        sugerido = "cafetería";
+        razon = "Zona saturada, conviene negocio de rotación rápida";
+    }
+
+    else if(total < 4){
+        sugerido = "restaurante";
+        razon = "Baja competencia directa";
+    }
+
+    else if(total >= 4 && total <= 8){
+        sugerido = "farmacia";
+        razon = "Competencia moderada, demanda estable";
+    }
+
+    mostrarSugerencias([
+        {codigo:sugerido, razon}
+    ]);
+}
 
         function mostrarSugerencias(lista) {
             const div = document.getElementById("recomendaciones");
@@ -605,7 +656,7 @@
                 clearTimeout(timeoutId);
 
                 const negociosReales = data.negocios || [];
-                
+                const negociosReales = data.negocios || [];
                 markersCluster.clearLayers();
                 if (heatLayer) map.removeLayer(heatLayer);
 
@@ -622,14 +673,6 @@
                         markersCluster.addLayer(marker);
                     });
                 }
-
-                const modelInput = {
-                    competidores: negociosReales.length,
-                    densidad: Math.floor(Math.random() * (6000 - 1500 + 1)) + 1500, 
-                    renta: Math.floor(Math.random() * (25000 - 6000 + 1)) + 6000,   
-                    seguridad: (Math.floor(Math.random() * (95 - 40 + 1)) + 40) / 100, 
-                    flujo: Math.floor(Math.random() * (600 - 50 + 1)) + 50          
-                };
 
                 const scoreRaw = randomForestPredict(modelInput);
                 const scoreFinal = Math.round(scoreRaw * 100);
@@ -657,7 +700,116 @@
                 toggleLoading(false);
             }
         }
+        function generarMapaRentabilidad(){
 
+    const bounds = map.getBounds();
+    const puntos = [];
+
+    const step = 0.002;
+
+    for(let lat = bounds.getSouth(); lat <= bounds.getNorth(); lat += step){
+        for(let lng = bounds.getWest(); lng <= bounds.getEast(); lng += step){
+
+            const variables = estimarVariables(lat,lng);
+
+            const score = calcularScore(variables);
+
+            puntos.push([lat,lng,score]);
+        }
+    }
+
+    mostrarMapaRentabilidad(puntos);
+}
+        function buscarMejoresUbicaciones(lat,lng){
+
+    const candidatos = [];
+
+    for(let i=-5;i<=5;i++){
+        for(let j=-5;j<=5;j++){
+
+            const pLat = lat + i*0.002;
+            const pLng = lng + j*0.002;
+
+            const vars = estimarVariables(pLat,pLng);
+
+            const score = calcularScore(vars);
+
+            candidatos.push({lat:pLat,lng:pLng,score});
+        }
+    }
+
+    candidatos.sort((a,b)=>b.score-a.score);
+
+    return candidatos.slice(0,5);
+}
+        function calcularSaturacion(competidores, poblacion){
+
+    const ratio = poblacion / (competidores + 1);
+
+    if(ratio > 3000) return "BAJA";
+    if(ratio > 1500) return "MEDIA";
+
+    return "ALTA";
+}
+        function predecirVentas(score, flujo, densidad){
+
+    const base = flujo * 120;
+
+    const ajusteScore = 1 + (score - 0.5);
+
+    const ajusteDensidad = densidad / 3000;
+
+    return base * ajusteScore * ajusteDensidad;
+}
+        function detectarClusters(negocios){
+
+    const clusters = [];
+
+    negocios.forEach(n=>{
+        const cercanos = negocios.filter(o =>
+            distancia(n,o) < 200
+        );
+
+        if(cercanos.length > 10){
+            clusters.push(n);
+        }
+    });
+
+    return clusters;
+}
+        function calcularScore(x){
+
+    const score =
+        (x.competidores * -0.15) +
+        (x.densidad * 0.25) +
+        (x.flujo * 0.25) +
+        (x.seguridad * 0.10) +
+        (x.accesibilidad * 0.10) +
+        (x.zonaComercial * 0.10) +
+        (x.ingresoPromedio * 0.05);
+
+    return Math.max(0, Math.min(1, score));
+}
+function calcularVariablesReales(negocios, lat, lng){
+
+    const competidores = negocios.length;
+
+    const densidad = Math.min(6000, competidores * 450 + 1200);
+
+    const flujo = Math.min(800, negocios.length * 35 + 80);
+
+    const seguridad = 0.55 + Math.min(0.35, negocios.length * 0.01);
+
+    const renta = 6000 + (densidad * 2.1);
+
+    return {
+        competidores,
+        densidad,
+        renta,
+        seguridad,
+        flujo
+    };
+}
         function actualizarUIResultados() {
             const emptyState = document.getElementById("analysis-empty");
             const contentState = document.getElementById("analysis-content");

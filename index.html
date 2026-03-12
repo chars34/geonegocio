@@ -305,12 +305,7 @@
 
        
 
-        function limpiarMapa() {
-            if (markersCluster) markersCluster.clearLayers();
-            if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
-            if (topMarkers) { topMarkers.forEach(m => map.removeLayer(m)); topMarkers = []; }
-            if (zonasRentablesLayer) { map.removeLayer(zonasRentablesLayer); zonasRentablesLayer = null; }
-        }
+       
 
         function showToast(msj, type) {
             const container = document.getElementById('toast-container');
@@ -348,10 +343,7 @@
             });
         }
 
-        function updateSimTextOnly() {
-            document.getElementById('val-inversion').innerText = formatter.format(document.getElementById('input-inversion').value);
-            document.getElementById('val-ventas').innerText = formatter.format(document.getElementById('input-ventas').value);
-        }
+     
 
         function updateSim() {
             updateSimTextOnly();
@@ -374,15 +366,23 @@
             document.getElementById('result-title').innerText = "Punto " + currentPoint;
         }
 
-        function setPoint(p) { 
-            currentPoint = p; 
-            document.getElementById('current-point-badge').innerText = "Editando: Punto " + p;
-            document.getElementById('current-point-badge').className = p === 'A' ? 'bg-red-500 text-white text-xs p-1 rounded' : 'bg-green-500 text-white text-xs p-1 rounded';
-        }
+      function setPoint(p){
+
+    currentPoint = p;
+
+    const badge = document.getElementById('current-point-badge');
+
+    badge.innerText = "Editando: Punto " + p;
+
+    badge.classList.remove("bg-red-500","bg-green-500");
+
+    badge.classList.add(p === "A" ? "bg-red-500" : "bg-green-500");
+
+}
 
         function locateUser() {
             map.locate({setView: true, maxZoom: 15});
-            map.on('locationfound', (e) => {
+          map.once('locationfound', (e) => {
                 if (currentPoint === "A") {
                     if (markerA) map.removeLayer(markerA);
                     markerA = crearMarcadorAnimado(e.latlng, 'red', 'A');
@@ -517,30 +517,21 @@ function mostrarTop5(){
     const sugerencias = lista.slice(0,3);
 
     mostrarSugerencias(sugerencias);
-}
-        function mostrarSugerencias(lista){
+function mostrarSugerencias(lista){
 
-    const div = document.getElementById("recomendaciones");`
-<div style="
-    font-size:13px;
-    line-height:1.4;
-    min-width:180px;
-">
-    <b>🤖 IA recomienda</b><br>
-    🏪 Negocio: <b>${currentBusiness}</b><br>
-    📈 Score: <b>${score}</b><br>
-    🏢 Competencia cercana: <b>${competencia}</b>
-</div>
-`;
+    const div = document.getElementById("recomendaciones");
 
-L.popup({
-    offset:[0,-10],
-    closeButton:false
-})
+    const competencia = lista.length;
+    const score = results[currentPoint]?.score || "--";
 
-   .setLatLng([lat, lng])
-.setContent(contenidoIA)
-.openOn(map);
+    div.innerHTML = `
+        <div style="font-size:13px; line-height:1.4;">
+            <b>🤖 IA recomienda</b><br>
+            🏪 Negocio: <b>${currentBusiness}</b><br>
+            📈 Score: <b>${score}%</b><br>
+            🏢 Competencia cercana: <b>${competencia}</b>
+        </div>
+    `;
 }
       async function escanearMapa() {
 
@@ -655,7 +646,9 @@ sugerirNegocio(negociosReales);
                 if (heatLayer) map.removeLayer(heatLayer);
 
                 if(negociosReales.length > 0) {
-                    const heatPoints = negociosReales.map(n => [n.latitud, n.longitud, 0.6]);
+                   const heatPoints = negociosReales
+    .filter(n => n.latitud && n.longitud)
+    .map(n => [n.latitud, n.longitud, 0.6]);
                     heatLayer = L.heatLayer(heatPoints, { radius: 25, blur: 20, gradient: {0.4: 'blue', 0.6: 'cyan', 0.8: 'yellow', 1.0: 'red'} }).addTo(map);
                     
                     negociosReales.forEach(n => {

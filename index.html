@@ -140,8 +140,15 @@
                         <div class="flex bg-slate-200 rounded p-0.5" id="point-toggle">
                             <button onclick="setPoint('A')" id="btn-pt-A" class="px-3 py-1 text-xs font-bold rounded bg-white text-red-600 shadow-sm transition-all">Punto A</button>
                             <button onclick="setPoint('B')" id="btn-pt-B" class="px-3 py-1 text-xs font-bold rounded text-slate-500 hover:text-green-600 transition-all">Punto B</button>
+                       <button onclick="escanearMapa()"
+class="bg-green-600 text-white px-4 py-2 rounded-lg">
+
+Escanear zonas rentables
+
+</button>
                         </div>
                     </div>
+                    
                     <div id="business-list" class="overflow-y-auto p-2 flex flex-col gap-1.5">
                         <!-- Botones generados por JS -->
                     </div>
@@ -324,10 +331,10 @@
         let circleA = null;
         let circleB = null;
         let heatLayer = null;
-        
+        let topLocations = [];
         let currentBusiness = "restaurante";
         let currentPoint = "A";
-        
+let zonasRentablesLayer = null;
         // Almacenar resultados para comparativas
         let results = {
             A: null,
@@ -581,7 +588,92 @@
             const suma = trees.reduce((a,b)=>a+b,0);
             return suma / trees.length;
         }
+function calcularTop5(lat, lng){
 
+    let candidatos = [];
+
+    for(let i=0;i<30;i++){
+
+        const newLat = lat + (Math.random() - 0.5) * 0.01;
+        const newLng = lng + (Math.random() - 0.5) * 0.01;
+
+        const input = {
+            competidores: Math.floor(Math.random()*12),
+            densidad: Math.floor(Math.random()*5000)+1500,
+            renta: Math.floor(Math.random()*20000)+5000,
+            seguridad: Math.random(),
+            flujo: Math.floor(Math.random()*600)
+        };
+
+        const score = Math.round(randomForestPredict(input)*100);
+
+        candidatos.push({
+            lat:newLat,
+            lng:newLng,
+            score:score
+        });
+    }
+
+    candidatos.sort((a,b)=>b.score-a.score);
+
+    topLocations = candidatos.slice(0,5);
+}
+        function mostrarTop5(){
+
+    topLocations.forEach((p,i)=>{
+
+        const color = ["#22c55e","#4ade80","#84cc16","#eab308","#f97316"][i];
+
+        const marker = L.circleMarker([p.lat,p.lng],{
+            radius:10,
+            color:"#fff",
+            weight:2,
+            fillColor:color,
+            fillOpacity:0.9
+        });
+
+        marker.bindPopup(`
+        ⭐ <b>Top ${i+1} ubicación</b><br>
+        Score: ${p.score}%<br>
+        Potencial comercial alto
+        `);
+
+        marker.addTo(map);
+
+    });
+}
+      async function escanearMapa() {
+
+    const bounds = map.getBounds();
+
+    const south = bounds.getSouth();
+    const north = bounds.getNorth();
+    const west = bounds.getWest();
+    const east = bounds.getEast();
+
+    const step = 0.01; // distancia entre puntos (~1km)
+
+    const puntos = [];
+
+    for(let lat = south; lat <= north; lat += step){
+        for(let lng = west; lng <= east; lng += step){
+
+            const input = {
+                competidores: Math.floor(Math.random()*10),
+                densidad: Math.floor(Math.random()*5000)+2000,
+                renta: Math.floor(Math.random()*20000)+6000,
+                seguridad: Math.random(),
+                flujo: Math.floor(Math.random()*800)
+            };
+
+            const score = randomForestPredict(input);
+
+            puntos.push([lat,lng,score]);
+        }
+    }
+
+    mostrarMapaRentabilidad(puntos);
+}
         // ==========================================
         // ANÁLISIS PRINCIPAL
         // ==========================================
@@ -675,7 +767,8 @@
 
                 // Centrar mapa
                 map.flyTo([lat, lng], 14, { duration: 0.8 });
-
+calcularTop5(lat,lng);
+mostrarTop5();
                 // Cambiar a pestaña de análisis
                 setTimeout(() => {
                     actualizarUIResultados();
@@ -690,7 +783,38 @@
                 toggleLoading(false);
             }
         }
+async function escanearMapa() {
 
+    const bounds = map.getBounds();
+
+    const south = bounds.getSouth();
+    const north = bounds.getNorth();
+    const west = bounds.getWest();
+    const east = bounds.getEast();
+
+    const step = 0.01; // distancia entre puntos (~1km)
+
+    const puntos = [];
+
+    for(let lat = south; lat <= north; lat += step){
+        for(let lng = west; lng <= east; lng += step){
+
+            const input = {
+                competidores: Math.floor(Math.random()*10),
+                densidad: Math.floor(Math.random()*5000)+2000,
+                renta: Math.floor(Math.random()*20000)+6000,
+                seguridad: Math.random(),
+                flujo: Math.floor(Math.random()*800)
+            };
+
+            const score = randomForestPredict(input);
+
+            puntos.push([lat,lng,score]);
+        }
+    }
+
+    mostrarMapaRentabilidad(puntos);
+}
         // ==========================================
         // UI DE RESULTADOS Y COMPARATIVA
         // ==========================================

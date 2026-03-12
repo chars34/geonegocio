@@ -151,6 +151,10 @@ z-index:999;
                         <span class="text-xs font-bold text-slate-600 uppercase tracking-wide">1. Tipo de Negocio</span>
                         <div class="flex bg-slate-200 rounded p-0.5" id="point-toggle">
                             <button onclick="setPoint('A')" id="btn-pt-A" class="px-3 py-1 text-xs font-bold rounded bg-white text-red-600 shadow-sm transition-all">Punto A</button>
+                      <button onclick="setPoint('B')" id="btn-pt-B"
+class="px-3 py-1 text-xs font-bold rounded bg-white text-blue-600 shadow-sm transition-all">
+Punto B
+</button>
                         </div>
                     </div>
                     
@@ -640,33 +644,7 @@ function mostrarTop5(){
         topMarkers.push(marker);
     });
 }
-        function limpiarMapa(){
-
-    // limpiar marcadores DENUE
-    if(markersCluster){
-        markersCluster.clearLayers();
-    }
-
-    // limpiar heatmap
-    if(heatLayer){
-        map.removeLayer(heatLayer);
-        heatLayer = null;
-    }
-
-    // limpiar TOP 5
-    if(topMarkers){
-        topMarkers.forEach(m => map.removeLayer(m));
-        topMarkers = [];
-    }
-
-    // limpiar marcador de análisis
-    if(userMarker){
-        map.removeLayer(userMarker);
-        userMarker = null;
-    }
-
-}
-        function limpiarMapa(){
+            function limpiarMapa(){
 
     // limpiar marcadores DENUE
     if(markersCluster){
@@ -775,6 +753,8 @@ function mostrarTop5(){
 
     if(zonasRentablesLayer){
         map.removeLayer(zonasRentablesLayer);
+        zonasRentablesLayer = null;
+limpiarMapa():
     }
 
     const heatData = puntos.map(p => [
@@ -793,7 +773,7 @@ function mostrarTop5(){
         // ANÁLISIS PRINCIPAL
         // ==========================================
         async function analyzeLocation() {
-            
+             limpiarMapa();
             let lat, lng;
             let isA = currentPoint === "A";
             let mColor = isA ? "#ef4444" : "#10b981";
@@ -814,7 +794,7 @@ function mostrarTop5(){
                 if (circleB) map.removeLayer(circleB);
                 circleB = L.circle([lat, lng], { radius: 500, color: mColor, weight: 2, fillColor: mColor, fillOpacity: 0.1, dashArray: '5, 5' }).addTo(map);
             }
-limpiarMapa();
+
             toggleLoading(true);
 
             try {
@@ -884,7 +864,7 @@ sugerirNegocio(negociosReales);
                 // Centrar mapa
                 map.flyTo([lat, lng], 14, { duration: 0.8 });
 calcularTop5(lat,lng);
-mostrarTop5();
+
                 // Cambiar a pestaña de análisis
                 setTimeout(() => {
                     actualizarUIResultados();

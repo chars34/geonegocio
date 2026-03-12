@@ -825,19 +825,7 @@ calcularTop5(lat,lng);
     }
 }
 
-            // ROI = (Utilidad Anual / Inversión) * 100
-            let roiAnual = 0;
-            const roiResult = document.getElementById('roi-result');
-            
-            if(utilidadMensual > 0) {
-                roiAnual = ((utilidadMensual * 12) / inversion) * 100;
-                roiResult.innerText = roiAnual.toFixed(1) + "%";
-                roiResult.className = `text-xl font-black ${roiAnual > 30 ? 'text-emerald-500' : (roiAnual > 15 ? 'text-blue-600' : 'text-amber-500')}`;
-            } else {
-                roiResult.innerText = "Negativo";
-                roiResult.className = "text-lg font-black text-red-500";
-            }
-        }
+           
 
         function animateValue(obj, start, end, duration) {
             let startTimestamp = null;

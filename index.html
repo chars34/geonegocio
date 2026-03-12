@@ -332,11 +332,40 @@
                 const btn = document.createElement("button");
                 btn.className = `w-full p-2 rounded border text-xs mb-1 ${name === currentBusiness ? 'bg-blue-100 border-blue-500' : 'bg-white'}`;
                 btn.innerText = name.toUpperCase();
-                btn.onclick = () => { currentBusiness = name; initBusinessButtons(); };
+                
+                btn.onclick = () => { 
+                    currentBusiness = name; 
+                    
+                    // 1. Limpiar el mapa de análisis previos (heatmap, clusters, top 5)
+                    limpiarMapa();
+                    
+                    // 2. Limpiar círculos de radio si existen
+                    if (circleA) { map.removeLayer(circleA); circleA = null; }
+                    if (circleB) { map.removeLayer(circleB); circleB = null; }
+                    
+                    // 3. Limpiar el panel flotante de recomendaciones
+                    const recPanel = document.getElementById("recomendaciones");
+                    if(recPanel) recPanel.innerHTML = "";
+                    
+                    // 4. Resetear los resultados para evitar que el simulador/análisis use datos viejos
+                    results = { A: null, B: null };
+                    
+                    // 5. Restablecer la pestaña de análisis a su estado "vacío"
+                    const emptyState = document.getElementById("analysis-empty");
+                    const contentState = document.getElementById("analysis-content");
+                    const compSection = document.getElementById("comparison-section");
+                    
+                    if(emptyState) emptyState.classList.remove("hidden");
+                    if(contentState) contentState.classList.add("hidden");
+                    if(compSection) compSection.classList.add("hidden");
+                    
+                    // 6. Volver a renderizar los botones para actualizar el color del botón activo
+                    initBusinessButtons(); 
+                };
+                
                 list.appendChild(btn);
             });
         }
-
         // --- Corrección: Función añadida para actualizar texto del simulador ---
         function updateSimTextOnly() {
             const inputInv = document.getElementById('input-inversion');

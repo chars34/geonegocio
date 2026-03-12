@@ -36,7 +36,39 @@
         
         .marker-cluster-small { background-color: rgba(239, 68, 68, 0.6); }
         .marker-cluster-small div { background-color: rgba(239, 68, 68, 0.8); color: white; }
+.recomendacion-panel{
 
+    position:absolute;
+
+    bottom:90px;
+    right:10px;
+
+    width:200px;
+
+    background:white;
+    padding:12px;
+
+    border-radius:12px;
+
+    box-shadow:0 6px 18px rgba(0,0,0,0.2);
+
+    font-size:13px;
+
+    z-index:400;
+
+    transition:all .3s ease;
+}
+
+@media (max-width:768px){
+
+.recomendacion-panel{
+
+    bottom:110px;
+    right:8px;
+    width:180px;
+
+}
+}
         .app-container {
             max-width: 480px;
             margin: 0 auto;
@@ -92,8 +124,7 @@
             <section id="view-map" class="absolute inset-0 flex flex-col transition-opacity duration-300">
                 <div class="flex-1 relative w-full h-full z-0" id="map-container">
                     <div id="map" class="absolute inset-0"></div>
-                    <div id="recomendaciones" style="position:absolute; top:20px; right:20px; background:white; padding:12px; border-radius:10px; box-shadow:0 4px 10px rgba(0,0,0,0.2); font-size:14px; width:200px; z-index:999;"></div>
-
+                    <div id="recomendaciones"class="recomendacion-panel"></div>
                     <div id="loading-overlay" class="absolute inset-0 bg-white/70 backdrop-blur-[2px] z-[1000] hidden flex-col items-center justify-center">
                         <div class="bg-white p-4 rounded-xl shadow-xl flex flex-col items-center">
                             <div class="animate-spin rounded-full h-10 w-10 border-4 border-slate-200 border-t-app-blue mb-3"></div>
@@ -489,25 +520,27 @@ function mostrarTop5(){
 }
         function mostrarSugerencias(lista){
 
-    const div = document.getElementById("recomendaciones");
+    const div = document.getElementById("recomendaciones");`
+<div style="
+    font-size:13px;
+    line-height:1.4;
+    min-width:180px;
+">
+    <b>🤖 IA recomienda</b><br>
+    🏪 Negocio: <b>${currentBusiness}</b><br>
+    📈 Score: <b>${score}</b><br>
+    🏢 Competencia cercana: <b>${competencia}</b>
+</div>
+`;
 
-    if(!div) return;
+L.popup({
+    offset:[0,-10],
+    closeButton:false
+})
 
-    let html = "<h3>🤖 IA recomienda abrir:</h3>";
-
-    lista.forEach((s,i)=>{
-
-        const medal = i==0 ? "🥇" : i==1 ? "🥈" : "🥉";
-
-        html += `
-        <div style="padding:6px">
-            ${medal} Giro ${s.codigo}<br>
-            Competencia cercana: ${s.total}
-        </div>
-        `;
-    });
-
-    div.innerHTML = html;
+   .setLatLng([lat, lng])
+.setContent(contenidoIA)
+.openOn(map);
 }
       async function escanearMapa() {
 

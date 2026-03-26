@@ -133,17 +133,17 @@
                         <div class="bg-white p-4 rounded-xl shadow-xl flex flex-col items-center">
                             <div class="animate-spin rounded-full h-10 w-10 border-4 border-slate-200 border-t-app-blue mb-3"></div>
                             <p class="text-sm font-bold text-app-blue animate-pulse">Analizando zona...</p>
-                            <p class="text-xs text-slate-500 mt-1">Consultando API DENUE</p>
+                            <p class="text-xs text-slate-500 mt-1">Procesando datos geográficos</p>
                         </div>
                     </div>
 
                     <button onclick="locateUser()" class="absolute top-4 right-4 z-[400] bg-white p-2.5 rounded-full shadow-lg border border-slate-200 text-slate-700 hover:text-blue-600 focus:outline-none pulse-btn" id="btn-locate">
                         <i data-lucide="crosshair" class="w-5 h-5"></i>
                     </button>
-                    <button onclick="analizarCiudad()" class="absolute top-28 right-4 z-[400] bg-white p-2.5 rounded-full shadow-lg border border-slate-200 text-slate-700 hover:text-purple-600">
+                    <button onclick="analizarCiudad()" class="absolute top-28 right-4 z-[400] bg-white p-2.5 rounded-full shadow-lg border border-slate-200 text-slate-700 hover:text-purple-600" title="Analizar ciudad">
                         <i data-lucide="brain-circuit" class="w-5 h-5"></i>
                     </button>
-                    <button onclick="buscarMejorZona()" class="absolute top-16 right-4 z-[400] bg-white p-2.5 rounded-full shadow-lg border border-slate-200 text-slate-700 hover:text-green-600">
+                    <button onclick="buscarMejorZona()" class="absolute top-16 right-4 z-[400] bg-white p-2.5 rounded-full shadow-lg border border-slate-200 text-slate-700 hover:text-green-600" title="Buscar mejores zonas">
                         <i data-lucide="brain" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -226,7 +226,7 @@
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col gap-5">
                     <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 flex gap-3 items-center">
                         <p class="text-[0.7rem] text-blue-800 leading-tight font-medium">
-                            Basado en score de <span id="sim-score-text" class="font-bold">--%</span>.
+                            Basado en score de <span id="sim-score-text" class="font-bold">--%</span> y costos operativos estimados de la zona.
                         </p>
                     </div>
                     <div>
@@ -269,10 +269,10 @@
 
     <script>
         const businessData = {
-            'restaurante': { scian: '722511', icon: 'utensils', margen: 0.25 },
-            'cafetería': { scian: '722515', icon: 'coffee', margen: 0.35 },
-            'farmacia': { scian: '464111', icon: 'pill', margen: 0.20 },
-            'tienda de ropa': { scian: '463111', icon: 'shirt', margen: 0.40 }
+            'restaurante': { scian: '722511', icon: 'utensils', margen: 0.35 },
+            'cafetería': { scian: '722515', icon: 'coffee', margen: 0.45 },
+            'farmacia': { scian: '464111', icon: 'pill', margen: 0.25 },
+            'tienda de ropa': { scian: '463111', icon: 'shirt', margen: 0.50 }
         };
 
         const API_URL = "https://geonegocio-1.onrender.com/api/denue";
@@ -281,17 +281,20 @@
         let currentBusiness = "restaurante", currentPoint = "A", results = { A: null, B: null };
         const formatter = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
 
+        // Coordenadas base (Centro)
+        const CITY_CENTER = [19.0433, -98.2019];
+
         window.onload = () => {
             initBusinessButtons();
             initMap();
             lucide.createIcons();
-            setPoint('A'); // Inicializa la UI de los botones A/B
-            setTimeout(() => { markerA = crearMarcadorAnimado([19.0433, -98.2019], 'red', 'A'); }, 500);
+            setPoint('A'); 
+            setTimeout(() => { markerA = crearMarcadorAnimado(CITY_CENTER, 'red', 'A'); }, 500);
             updateSimTextOnly();
         };
 
         function initMap() {
-            map = L.map('map', { zoomControl: false, attributionControl: false }).setView([19.0433, -98.2019], 14);
+            map = L.map('map', { zoomControl: false, attributionControl: false }).setView(CITY_CENTER, 14);
             L.control.zoom({ position: 'topleft' }).addTo(map);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
             markersCluster = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40 });
@@ -348,7 +351,7 @@
             list.innerHTML = "";
             Object.keys(businessData).forEach(name => {
                 const btn = document.createElement("button");
-                btn.className = `w-full p-2 rounded border text-xs mb-1 ${name === currentBusiness ? 'bg-blue-100 border-blue-500' : 'bg-white'}`;
+                btn.className = `w-full p-2 rounded border text-xs mb-1 ${name === currentBusiness ? 'bg-blue-100 border-blue-500 font-bold' : 'bg-white text-slate-600'}`;
                 btn.innerText = name.toUpperCase();
                 
                 btn.onclick = () => { 
@@ -392,7 +395,6 @@
             badge.classList.remove("bg-red-500","bg-green-500");
             badge.classList.add(p === "A" ? "bg-red-500" : "bg-green-500");
 
-            // Actualizar apariencia de los botones
             const btnA = document.getElementById('btn-pt-A');
             const btnB = document.getElementById('btn-pt-B');
             
@@ -445,15 +447,49 @@
             }
         }
 
+        // ---- MODELO PREDICTIVO MEJORADO (SIMULACIÓN NO LINEAL) ----
         function randomForestPredict(x){
-            const scoreCompetencia = x.competidores <= 3 ? 0.9 : x.competidores <= 7 ? 0.7 : x.competidores <= 12 ? 0.5 : 0.3;
-            const scoreDensidad = x.densidad > 5000 ? 0.9 : x.densidad > 3500 ? 0.75 : x.densidad > 2000 ? 0.6 : 0.4;
-            const scoreFlujo = x.flujo > 500 ? 0.9 : x.flujo > 300 ? 0.75 : x.flujo > 120 ? 0.6 : 0.45;
-            const scoreSeguridad = x.seguridad > 0.8 ? 0.9 : x.seguridad > 0.7 ? 0.75 : x.seguridad > 0.6 ? 0.6 : 0.4;
-            const scoreRenta = x.renta < 9000 ? 0.85 : x.renta < 14000 ? 0.7 : x.renta < 20000 ? 0.55 : 0.4;
+            // Normalización y relación saturación/densidad
+            const saturacion = x.competidores / ((x.densidad / 1000) + 1);
+            
+            // Puntuaciones base continuas
+            const scoreCompetencia = Math.max(0, 1 - (saturacion * 0.25));
+            const scoreDensidad = Math.min(1, x.densidad / 8000);
+            const scoreFlujo = Math.min(1, x.flujo / 1200);
+            const scoreSeguridad = Math.max(0, Math.min(1, x.seguridad));
+            
+            // Distribución gaussiana para la renta (penaliza lugares muy baratos o muy caros)
+            const rentabilidadMedia = Math.exp(-Math.pow((x.renta - 15000)/8000, 2));
 
-            const finalScore = (scoreCompetencia * 0.25) + (scoreDensidad * 0.20) + (scoreFlujo * 0.25) + (scoreSeguridad * 0.15) + (scoreRenta * 0.15);
-            return finalScore;
+            // Simulación de "ramas" de árbol de decisión (interacciones complejas)
+            let interaccion = 0;
+            if(scoreDensidad > 0.6 && scoreFlujo > 0.5) interaccion += 0.15; // Zona comercial premium
+            if(saturacion > 2) interaccion -= 0.20; // Zona canibalizada
+
+            const finalScore = (scoreCompetencia * 0.2) + (scoreDensidad * 0.25) + (scoreFlujo * 0.2) + (scoreSeguridad * 0.15) + (rentabilidadMedia * 0.2) + interaccion;
+            
+            return Math.max(0.05, Math.min(0.99, finalScore));
+        }
+
+        // ---- GENERACIÓN REALISTA BASADA EN GEOLOCALIZACIÓN ----
+        function estimarVariables(lat, lng){
+            const center = L.latLng(CITY_CENTER[0], CITY_CENTER[1]);
+            const point = L.latLng(lat, lng);
+            const distMetros = point.distanceTo(center);
+
+            // Factor de decaimiento urbano (cae a medida que te alejas del centro)
+            const factorUrbano = Math.max(0.1, 1 - (distMetros / 8000)); 
+
+            return {
+                competidores: Math.floor((Math.random() * 3) + (factorUrbano * 12)),
+                densidad: 1500 + (factorUrbano * 7000) + (Math.random() * 1000 - 500),
+                flujo: 50 + (factorUrbano * 1000) + (Math.random() * 200),
+                seguridad: 0.3 + (factorUrbano * 0.5) + (Math.random() * 0.2),
+                renta: 4000 + (factorUrbano * 25000) + (Math.random() * 3000),
+                accesibilidad: 0.3 + (factorUrbano * 0.6),
+                zonaComercial: factorUrbano,
+                ingresoPromedio: 0.4 + (factorUrbano * 0.4)
+            };
         }
 
         function calcularTop5(lat,lng){
@@ -463,13 +499,7 @@
                 for(let j=-3;j<=3;j++){
                     const newLat = lat + (i * step);
                     const newLng = lng + (j * step);
-                    const input = {
-                        competidores: Math.floor(Math.random()*10),
-                        densidad: 2000 + Math.abs(i*j)*400,
-                        renta: 7000 + Math.abs(i+j)*1200,
-                        seguridad: 0.65 + Math.abs(i)*0.03,
-                        flujo: 120 + Math.abs(i*j)*40
-                    };
+                    const input = estimarVariables(newLat, newLng); // Usa el modelo geográfico
                     const score = Math.round(randomForestPredict(input)*100);
                     grid.push({ lat:newLat, lng:newLng, score });
                 }
@@ -517,17 +547,6 @@
             if (div) div.classList.remove('active');
         }
 
-        function rankingGiros(lat,lng){
-            const resultados = [];
-            Object.keys(businessData).forEach(giro=>{
-                const vars = estimarVariables(lat,lng);
-                const score = randomForestPredict(vars);
-                resultados.push({ giro, score: Math.round(score*100) });
-            });
-            resultados.sort((a,b)=>b.score-a.score);
-            return resultados.slice(0,3);
-        }
-
         function mostrarSugerencias(lista) {
             const div = document.getElementById("recomendaciones");
             const score = results[currentPoint]?.score || 0;
@@ -540,7 +559,7 @@
                 <div class="ia-badge shadow-sm">🤖 IA SMART INSIGHT</div>
                 <div class="flex flex-col gap-2 mt-1">
                     <div>
-                        <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Giro Sugerido</p>
+                        <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Giro Analizado</p>
                         <p class="text-sm font-bold text-slate-800">${currentBusiness.toUpperCase()}</p>
                     </div>
                     <div class="flex justify-between items-center border-t border-slate-200 pt-2 mt-1">
@@ -560,49 +579,31 @@
             lucide.createIcons();
         }
 
-        async function escanearMapa() {
-            const bounds = map.getBounds();
-            const step = 0.01; 
-            const puntos = [];
-            for(let lat = bounds.getSouth(); lat <= bounds.getNorth(); lat += step){
-                for(let lng = bounds.getWest(); lng <= bounds.getEast(); lng += step){
-                    const input = {
-                        competidores: Math.floor(Math.random()*10),
-                        densidad: Math.floor(Math.random()*5000)+2000,
-                        renta: Math.floor(Math.random()*20000)+6000,
-                        seguridad: Math.random(),
-                        flujo: Math.floor(Math.random()*800)
-                    };
-                    const score = randomForestPredict(input);
-                    puntos.push([lat,lng,score/100]);
-                }
-            }
-            mostrarMapaRentabilidad(puntos);
-        }
-
         async function analizarCiudad(){
-            showToast("IA analizando toda la ciudad...", "success");
+            showToast("IA escaneando terreno...", "success");
             toggleLoading(true);
 
-            const bounds = map.getBounds();
-            const step = 0.01;
-            const resultados = [];
+            setTimeout(() => {
+                const bounds = map.getBounds();
+                const step = 0.01;
+                const resultados = [];
 
-            for(let lat = bounds.getSouth(); lat <= bounds.getNorth(); lat += step){
-                for(let lng = bounds.getWest(); lng <= bounds.getEast(); lng += step){
-                    const vars = estimarVariables(lat,lng);
-                    const score = randomForestPredict(vars);
-                    resultados.push({ lat, lng, score: Math.round(score*100) });
+                for(let lat = bounds.getSouth(); lat <= bounds.getNorth(); lat += step){
+                    for(let lng = bounds.getWest(); lng <= bounds.getEast(); lng += step){
+                        const vars = estimarVariables(lat,lng);
+                        const score = randomForestPredict(vars);
+                        resultados.push({ lat, lng, score: Math.round(score*100) });
+                    }
                 }
-            }
 
-            resultados.sort((a,b)=>b.score-a.score);
-            const top = resultados.slice(0,10);
-            mostrarTopCiudad(top);
-            toggleLoading(false);
+                resultados.sort((a,b)=>b.score-a.score);
+                const top = resultados.slice(0,10);
+                mostrarTopCiudad(top);
+                toggleLoading(false);
 
-            const heat = resultados.map(p => [p.lat, p.lng, p.score/100]);
-            mostrarMapaRentabilidad(heat);
+                const heat = resultados.map(p => [p.lat, p.lng, p.score/100]);
+                mostrarMapaRentabilidad(heat);
+            }, 500); // Pequeño delay para permitir que el UI se actualice
         }
 
         function mostrarTopCiudad(top){
@@ -624,7 +625,8 @@
                 zonasRentablesLayer = null;
             }
             zonasRentablesLayer = L.heatLayer(puntos,{
-                radius:35, blur:25, maxZoom:16
+                radius:35, blur:25, maxZoom:16,
+                gradient: {0.3: 'blue', 0.5: 'cyan', 0.7: 'lime', 0.9: 'yellow', 1.0: 'red'}
             }).addTo(map);
         }
 
@@ -657,7 +659,7 @@
                 const url = `${API_URL}?lat=${lat}&lng=${lng}&radio=500&codigo=${codigo}`;
                 
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000); 
+                const timeoutId = setTimeout(() => controller.abort(), 6000); 
                 
                 let data = { negocios: [] };
                 try {
@@ -665,14 +667,22 @@
                     if(res.ok) {
                         data = await res.json();
                     } else {
-                        throw new Error("API falló");
+                        throw new Error("API status no ok");
                     }
                 } catch (e) {
-                    console.warn("Usando datos simulados debido a fallo de red/timeout", e);
-                    data.negocios = Array.from({length: Math.floor(Math.random() * 15)}, () => ({
-                        latitud: lat + (Math.random() - 0.5) * 0.01,
-                        longitud: lng + (Math.random() - 0.5) * 0.01
-                    }));
+                    // Generación de clusters en fallback (más realista que puro aleatorio)
+                    const baseVars = estimarVariables(lat, lng);
+                    const numNegocios = Math.max(0, Math.floor(baseVars.competidores + (Math.random()*4 - 2)));
+                    
+                    const cx = lat + (Math.random() - 0.5) * 0.004;
+                    const cy = lng + (Math.random() - 0.5) * 0.004;
+                    
+                    for(let i=0; i<numNegocios; i++){
+                        data.negocios.push({
+                            latitud: cx + (Math.random() - 0.5) * 0.003,
+                            longitud: cy + (Math.random() - 0.5) * 0.003
+                        });
+                    }
                 }
                 clearTimeout(timeoutId);
 
@@ -727,96 +737,34 @@
             }
         }
 
-        function estimarVariables(lat,lng){
-            return {
-                competidores: Math.floor(Math.random()*10),
-                densidad: 2000 + Math.random()*3000,
-                flujo: 100 + Math.random()*500,
-                seguridad: 0.5 + Math.random()*0.4,
-                accesibilidad: 0.5, zonaComercial: 0.5, ingresoPromedio: 0.5
-            };
-        }
-
-        function distancia(a,b){
-            const R = 6371000;
-            const dLat = (b.latitud-a.latitud) * Math.PI/180;
-            const dLng = (b.longitud-a.longitud) * Math.PI/180;
-            const lat1 = a.latitud * Math.PI/180;
-            const lat2 = b.latitud * Math.PI/180;
-            const x = Math.sin(dLat/2)**2 + Math.sin(dLng/2)**2 * Math.cos(lat1)*Math.cos(lat2);
-            return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
-        }
-
-        function generarMapaRentabilidad(){
-            const bounds = map.getBounds();
-            const puntos = [];
-            const step = 0.002;
-            for(let lat = bounds.getSouth(); lat <= bounds.getNorth(); lat += step){
-                for(let lng = bounds.getWest(); lng <= bounds.getEast(); lng += step){
-                    const variables = estimarVariables(lat,lng);
-                    const score = calcularScore(variables);
-                    puntos.push([lat,lng,score/100]);
-                }
-            }
-            mostrarMapaRentabilidad(puntos);
-        }
-
-        function buscarMejoresUbicaciones(lat,lng){
-            const candidatos = [];
-            for(let i=-5;i<=5;i++){
-                for(let j=-5;j<=5;j++){
-                    const pLat = lat + i*0.002;
-                    const pLng = lng + j*0.002;
-                    const vars = estimarVariables(pLat,pLng);
-                    const score = calcularScore(vars);
-                    candidatos.push({lat:pLat,lng:pLng,score});
-                }
-            }
-            candidatos.sort((a,b)=>b.score-a.score);
-            return candidatos.slice(0,5);
-        }
-
-        function calcularSaturacion(competidores, poblacion){
-            const ratio = poblacion / (competidores + 1);
-            if(ratio > 3000) return "BAJA";
-            if(ratio > 1500) return "MEDIA";
-            return "ALTA";
-        }
-
         function predecirVentas(score, flujo, densidad){
-            const ticketPromedio = 120;
-            const clientesDia = (flujo * 0.12) + (densidad / 80);
+            const ticketPromedio = 150;
+            const conversionRate = 0.05; // 5% de conversión del flujo
+            const clientesDia = (flujo * conversionRate * 10) + (densidad / 150);
             const clientesMes = clientesDia * 30;
+            // A mayor score, mejor captación del mercado
             const ventas = clientesMes * ticketPromedio * (score/100);
-            return Math.round(ventas);
+            return Math.round(Math.max(15000, ventas)); // Mínimo 15k
         }
 
         function nivelSaturacion(competidores){
             if(competidores <= 3) return "BAJA";
-            if(competidores <= 8) return "MEDIA";
+            if(competidores <= 7) return "MEDIA";
             return "ALTA";
         }
 
-        function detectarClusters(negocios){
-            const clusters = [];
-            negocios.forEach(n=>{
-                const cercanos = negocios.filter(o => distancia(n,o) < 200);
-                if(cercanos.length > 10){ clusters.push(n); }
-            });
-            return clusters;
-        }
-
-        function calcularScore(x){
-            const score = (x.competidores * -0.15) + (x.densidad * 0.25) + (x.flujo * 0.25) + (x.seguridad * 0.10) + (x.accesibilidad * 0.10) + (x.zonaComercial * 0.10) + (x.ingresoPromedio * 0.05);
-            return Math.max(0, Math.min(1, score));
-        }
-
         function calcularVariablesReales(negocios, lat, lng){
+            // Combina los datos de distancia de estimarVariables con los reales de la API
+            const bases = estimarVariables(lat, lng);
             const competidores = negocios.length;
-            const densidad = Math.min(6000, competidores * 450 + 1200);
-            const flujo = Math.min(800, negocios.length * 35 + 80);
-            const seguridad = 0.55 + Math.min(0.35, negocios.length * 0.01);
-            const renta = 6000 + (densidad * 2.1);
+            
+            // Ajustamos las variables base según la presencia real de negocios
+            const ajusteCluster = competidores > 0 ? (competidores * 300) : 0;
+            const densidad = bases.densidad + ajusteCluster;
+            const flujo = bases.flujo + (competidores * 20);
+            const seguridad = bases.seguridad;
+            const renta = bases.renta + (competidores * 800);
+            
             return { competidores, densidad, renta, seguridad, flujo };
         }
 
@@ -858,7 +806,6 @@
             scoreText.className = `text-5xl font-extrabold tracking-tighter ${textClass}`;
             label.className = `text-xs font-bold uppercase tracking-widest mt-1 ${textClass}`;
 
-            // Sincronizar también en la vista de simulador
             const simScoreText = document.getElementById("sim-score-text");
             if(simScoreText) {
                 simScoreText.innerText = score + "%";
@@ -896,19 +843,19 @@
                 <div class="bg-slate-50 border border-slate-100 p-2.5 rounded-lg flex flex-col gap-1">
                     <span class="text-[0.65rem] text-slate-500 font-bold uppercase">Densidad Pob.</span>
                     <div class="flex items-center gap-1.5 text-sm font-bold text-slate-700">
-                        ${getIcon(inp.densidad, [4000, 2000])} Alta
+                        ${getIcon(inp.densidad, [5000, 2000])} ${(inp.densidad).toFixed(0)} habs
                     </div>
                 </div>
                 <div class="bg-slate-50 border border-slate-100 p-2.5 rounded-lg flex flex-col gap-1">
                     <span class="text-[0.65rem] text-slate-500 font-bold uppercase">Seguridad</span>
                     <div class="flex items-center gap-1.5 text-sm font-bold text-slate-700">
-                        ${getIcon(inp.seguridad, [0.8, 0.6])} ${(inp.seguridad*100).toFixed(0)}%
+                        ${getIcon(inp.seguridad, [0.7, 0.4])} ${(inp.seguridad*100).toFixed(0)}%
                     </div>
                 </div>
                 <div class="bg-slate-50 border border-slate-100 p-2.5 rounded-lg flex flex-col gap-1">
                     <span class="text-[0.65rem] text-slate-500 font-bold uppercase">Flujo Peatonal</span>
                     <div class="flex items-center gap-1.5 text-sm font-bold text-slate-700">
-                        ${getIcon(inp.flujo, [300, 100])} ${inp.flujo}/hr
+                        ${getIcon(inp.flujo, [600, 200])} ${(inp.flujo).toFixed(0)}/hr
                     </div>
                 </div>
             `;
@@ -941,26 +888,36 @@
             }
 
             const sliderVentas = document.getElementById('input-ventas');
-            const ventasProyectadas = 50000 + (score * 1500); 
-            sliderVentas.value = ventasProyectadas;
+            const ventasProyectadas = predecirVentas(score, inp.flujo, inp.densidad);
+            sliderVentas.value = Math.min(500000, ventasProyectadas);
             updateSimTextOnly();
             updateSim(); 
         }
 
+        // ---- SIMULADOR FINANCIERO MEJORADO ----
         function updateSim(){
             updateSimTextOnly();
             const inversion = parseFloat(document.getElementById('input-inversion').value);
             const ventas = parseFloat(document.getElementById('input-ventas').value);
-            const margen = businessData[currentBusiness].margen || 0.25;
-            const utilidadMensual = ventas * margen;
-            const roiAnual = ((utilidadMensual * 12) / inversion) * 100;
+            const config = businessData[currentBusiness] || { margen: 0.25 };
+            const margenBruto = config.margen;
+
+            // Extraer la renta de la zona del punto analizado
+            const activeRes = results[currentPoint] || results.A;
+            const rentaEstimada = activeRes ? activeRes.inputs.renta : 12000;
+            
+            // OPEX (Gastos Operativos): Renta + Servicios (~$4,000) + Nómina Base (~$12,000)
+            const gastosOperativos = rentaEstimada + 4000 + 12000; 
+
+            const utilidadMensual = (ventas * margenBruto) - gastosOperativos;
+            const roiAnual = inversion > 0 ? ((utilidadMensual * 12) / inversion) * 100 : 0;
             const roiResult = document.getElementById('roi-result');
 
-            if(roiAnual > 0){
+            if(utilidadMensual > 0){
                 roiResult.innerText = roiAnual.toFixed(1) + "%";
                 roiResult.className = "text-lg font-extrabold text-emerald-600";
-            }else{
-                roiResult.innerText = "0%";
+            } else {
+                roiResult.innerText = "PÉRDIDA";
                 roiResult.className = "text-lg font-extrabold text-red-600";
             }
         }

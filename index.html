@@ -7,24 +7,26 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>  
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <!-- Librerías de Mapa Estabilizadas con versiones específicas -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>  
     
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    
+    <!-- Script correcto de Lucide para navegador (UMD build) -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         
         body { 
             font-family: 'Inter', sans-serif; 
-            background-color: #cbd5e1; /* Fondo más oscuro fuera de la app móvil */
+            background-color: #cbd5e1;
         }
 
-        /* Utilidades Glassmorphism */
         .glass {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
@@ -86,7 +88,7 @@
         }
 
         .app-container {
-            max-width: 420px; /* Un poco más estrecho, más parecido a un móvil moderno */
+            max-width: 420px;
             margin: 0 auto;
             background-color: #f1f5f9;
             height: 100vh;
@@ -98,7 +100,6 @@
             overflow: hidden;
         }
 
-        /* Sliders premium */
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; margin: 10px 0; }
         input[type=range]:focus { outline: none; }
         input[type=range]::-webkit-slider-thumb {
@@ -137,7 +138,6 @@
             100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
         }
 
-        /* Loader modernizado */
         .loader-ring {
             width: 50px; height: 50px;
             border: 4px solid transparent;
@@ -146,7 +146,6 @@
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* Custom marker animado CSS */
         .custom-pin div { transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .custom-pin:hover div { transform: translateY(-60%) scale(1.1) !important; }
     </style>
@@ -180,7 +179,7 @@
             <!-- VISTA MAPA -->
             <section id="view-map" class="absolute inset-0 flex flex-col transition-opacity duration-300">
                 <div class="flex-1 relative w-full h-full z-0" id="map-container">
-                    <div id="map" class="absolute inset-0"></div>
+                    <div id="map" class="absolute inset-0 z-0 bg-slate-200"></div>
                     
                     <div id="recomendaciones" class="recomendacion-panel glass p-5"></div>
                     
@@ -252,7 +251,6 @@
                 </div>
 
                 <div id="analysis-content" class="hidden flex-col gap-5">
-                    <!-- Tarjeta Principal de Score -->
                     <div class="bg-white rounded-3xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100 p-6">
                         <div class="flex justify-between items-center mb-6">
                             <div class="flex items-center gap-2">
@@ -263,7 +261,6 @@
                         </div>
                         
                         <div class="text-center mb-6 relative">
-                            <!-- Círculo decorativo de fondo -->
                             <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-slate-50 rounded-full blur-xl -z-10"></div>
                             
                             <div class="text-6xl font-black tracking-tighter" id="score-text">0%</div>
@@ -280,13 +277,11 @@
                         </div>
                     </div>
 
-                    <!-- Cuadrícula de Métricas -->
                     <div>
                         <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Desglose del Entorno</h4>
                         <div class="grid grid-cols-2 gap-3" id="metrics-grid"></div>
                     </div>
 
-                    <!-- Sección Comparativa -->
                     <div id="comparison-section" class="hidden bg-slate-900 rounded-3xl shadow-xl overflow-hidden text-white mt-2">
                         <div class="p-4 border-b border-white/10 flex items-center gap-2">
                             <i data-lucide="git-compare" class="w-4 h-4 text-slate-400"></i>
@@ -348,7 +343,7 @@
                         <div class="relative overflow-hidden bg-slate-900 rounded-2xl p-5 flex justify-between items-center shadow-lg">
                             <div class="absolute -right-4 -top-4 w-16 h-16 bg-blue-500 rounded-full blur-2xl opacity-20"></div>
                             <div>
-                                <span class="block text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest mb-1">Retorno de Inversión (ROI)</span>
+                                <span class="block text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest mb-1">Retorno (ROI)</span>
                                 <span class="block text-xs font-medium text-slate-300">Anualizado</span>
                             </div>
                             <span id="roi-result" class="text-3xl font-black text-white relative z-10">--%</span>
@@ -358,7 +353,7 @@
             </section>
         </main>
 
-        <!-- Nav flotante estilo Dock iOS -->
+        <!-- Nav flotante -->
         <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-[500] pointer-events-none w-full flex justify-center px-4 transition-transform duration-300" id="main-nav-container">
             <nav class="glass-dark rounded-full px-2 py-2 flex justify-center items-center gap-1 shadow-2xl pointer-events-auto border border-slate-700">
                 <button onclick="switchTab('view-map', this)" class="nav-btn active flex items-center gap-2 px-4 py-2.5 rounded-full outline-none text-slate-400 hover:text-white hover:bg-white/5 transition-all">
@@ -376,7 +371,6 @@
         <div id="toast-container" class="absolute top-24 left-1/2 transform -translate-x-1/2 w-11/12 z-[9999] flex flex-col gap-2 pointer-events-none items-center"></div>
     </div>
 
-    <!-- EL BACKEND JAVASCRIPT SE MANTIENE EXACTAMENTE IGUAL A LA VERSIÓN ANTERIOR (solo se actualizaron clases inyectadas en HTML para la nueva UI) -->
     <script>
         const businessData = {
             'restaurante': { scian: '722511', icon: 'utensils', margen: 0.35 },
@@ -391,15 +385,20 @@
         let currentBusiness = "restaurante", currentPoint = "A", results = { A: null, B: null };
         const formatter = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
 
-        // Coordenadas base (Centro)
         const CITY_CENTER = [19.0433, -98.2019];
 
+        // ORDEN CORREGIDO DE INICIALIZACIÓN (El mapa va primero y capturamos errores)
         window.onload = () => {
-            initBusinessButtons();
-            initMap();
-            lucide.createIcons();
+            try { initMap(); } catch(e) { console.error("Error cargando mapa:", e); }
+            try { initBusinessButtons(); } catch(e) { console.error("Error cargando botones:", e); }
+            
+            // Renderizamos íconos solo si Lucide logró cargar
+            try { if (typeof lucide !== 'undefined') lucide.createIcons(); } catch(e) {}
+            
             setPoint('A'); 
-            setTimeout(() => { markerA = crearMarcadorAnimado(CITY_CENTER, 'red', 'A'); }, 500);
+            setTimeout(() => { 
+                if(map) markerA = crearMarcadorAnimado(CITY_CENTER, 'red', 'A'); 
+            }, 500);
             updateSimTextOnly();
         };
 
@@ -434,15 +433,11 @@
         function showToast(msj, type) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            // Estilo de toast iOS
             toast.className = `px-5 py-3 rounded-full shadow-lg text-[0.7rem] font-bold tracking-wide uppercase flex items-center gap-2 transform translate-y-2 opacity-0 transition-all duration-300 ${type === 'error' ? 'bg-red-500 text-white' : (type === 'warning' ? 'bg-amber-500 text-white' : 'glass-dark text-white')}`;
             toast.innerText = msj;
             container.appendChild(toast);
             
-            // Animar entrada
             setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
-            
-            // Animar salida
             setTimeout(() => { 
                 toast.classList.add('-translate-y-2', 'opacity-0'); 
                 setTimeout(() => toast.remove(), 300);
@@ -463,14 +458,10 @@
             setTimeout(() => t.classList.remove('opacity-0'), 10);
             if(id === 'view-map' && map) setTimeout(() => map.invalidateSize(), 100);
 
-            // Gestionar estado de la navegación flotante
             if(btnElement) {
                 document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active', 'bg-white/10'));
                 btnElement.classList.add('active', 'bg-white/10');
-                
-                // Ocultar nav en el mapa si abrimos menú (opcional), aquí lo dejamos visible
             } else {
-                // Actualizar por ID si viene de un botón externo
                 document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active', 'bg-white/10'));
                 const mapping = {'view-map': 0, 'view-analysis': 1, 'view-simulator': 2};
                 const btns = document.querySelectorAll('.nav-btn');
@@ -513,12 +504,12 @@
                     if(compSection) compSection.classList.add("hidden");
                     
                     initBusinessButtons(); 
-                    lucide.createIcons();
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
                 };
                 
                 list.appendChild(btn);
             });
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function updateSimTextOnly() {
@@ -551,6 +542,7 @@
         }
 
         function locateUser() {
+            if (!map) return;
             map.locate({setView: true, maxZoom: 15});
             map.once('locationfound', (e) => {
                 if (currentPoint === "A") {
@@ -568,7 +560,7 @@
                 showToast("Ubicación denegada", "error");
                 setTimeout(() => {
                     btn.innerHTML = '<i data-lucide="crosshair" class="w-5 h-5"></i>';
-                    lucide.createIcons();
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
                 }, 2000);
             });
         }
@@ -590,7 +582,6 @@
             }
         }
 
-        // ---- MODELO PREDICTIVO ----
         function randomForestPredict(x){
             const saturacion = x.competidores / ((x.densidad / 1000) + 1);
             const scoreCompetencia = Math.max(0, 1 - (saturacion * 0.25));
@@ -671,9 +662,9 @@
 
         function limpiarMapa(){
             if(markersCluster) markersCluster.clearLayers();
-            if(heatLayer){ map.removeLayer(heatLayer); heatLayer = null; }
-            if(topMarkers){ topMarkers.forEach(m => map.removeLayer(m)); topMarkers = []; }
-            if(userMarker){ map.removeLayer(userMarker); userMarker = null; }
+            if(heatLayer && map){ map.removeLayer(heatLayer); heatLayer = null; }
+            if(topMarkers && map){ topMarkers.forEach(m => map.removeLayer(m)); topMarkers = []; }
+            if(userMarker && map){ map.removeLayer(userMarker); userMarker = null; }
             cerrarRecomendaciones();
         }
 
@@ -687,7 +678,6 @@
             const score = results[currentPoint]?.score || 0;
             let colorClass = score >= 75 ? 'text-emerald-500' : (score >= 50 ? 'text-amber-500' : 'text-red-500');
 
-            // UI Mejorada de la tarjeta flotante en JS
             div.innerHTML = `
                 <button onclick="cerrarRecomendaciones()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800 transition-colors focus:outline-none bg-slate-100/50 rounded-full p-1" title="Cerrar">
                     <i data-lucide="x" class="w-3.5 h-3.5"></i>
@@ -712,7 +702,7 @@
             `;
 
             div.classList.add('active');
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         async function analizarCiudad(){
@@ -720,6 +710,7 @@
             toggleLoading(true);
 
             setTimeout(() => {
+                if(!map) return;
                 const bounds = map.getBounds();
                 const step = 0.01;
                 const resultados = [];
@@ -756,7 +747,7 @@
         }
 
         function mostrarMapaRentabilidad(puntos){
-            if(zonasRentablesLayer){
+            if(zonasRentablesLayer && map){
                 map.removeLayer(zonasRentablesLayer);
                 zonasRentablesLayer = null;
             }
@@ -778,7 +769,6 @@
                 return;
             }
 
-            // Ocultar menú inferior para ver el mapa
             if(menuOpen) toggleMenuNegocio();
 
             ({ lat, lng } = activeMarker.getLatLng());
@@ -828,7 +818,7 @@
                 const modelInput = calcularVariablesReales(negociosReales, lat, lng);
                 markersCluster.clearLayers();
 
-                if (heatLayer && map.hasLayer(heatLayer)){
+                if (heatLayer && map && map.hasLayer(heatLayer)){
                     map.removeLayer(heatLayer);
                 }
 
@@ -969,6 +959,123 @@
             setTimeout(() => { bar.style.width = score + "%"; }, 100);
             animateValue(scoreText, 0, score, 1000);
 
-            // Iconos lógicos de evaluación
             const getEvalIcon = (val, thresholds) => {
-                if(val >= thresholds[0]) return `<div class="bg-emerald-
+                if(val >= thresholds[0]) return `<div class="bg-emerald-100 p-1.5 rounded-md"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i></div>`;
+                if(val >= thresholds[1]) return `<div class="bg-amber-100 p-1.5 rounded-md"><i data-lucide="minus" class="w-3.5 h-3.5 text-amber-600"></i></div>`;
+                return `<div class="bg-red-100 p-1.5 rounded-md"><i data-lucide="x" class="w-3.5 h-3.5 text-red-600"></i></div>`;
+            };
+            const getEvalIconInv = (val, thresholds) => {
+                if(val <= thresholds[0]) return `<div class="bg-emerald-100 p-1.5 rounded-md"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i></div>`;
+                if(val <= thresholds[1]) return `<div class="bg-amber-100 p-1.5 rounded-md"><i data-lucide="minus" class="w-3.5 h-3.5 text-amber-600"></i></div>`;
+                return `<div class="bg-red-100 p-1.5 rounded-md"><i data-lucide="x" class="w-3.5 h-3.5 text-red-600"></i></div>`;
+            };
+
+            const inp = activeRes.inputs;
+            const saturacion = nivelSaturacion(inp.competidores);
+            
+            document.getElementById("metrics-grid").innerHTML = `
+                <div class="bg-white border border-slate-100 p-3.5 rounded-2xl flex items-center gap-3 shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
+                    ${getEvalIconInv(inp.competidores, [3, 8])}
+                    <div>
+                        <span class="block text-[0.55rem] text-slate-400 font-extrabold uppercase tracking-widest">Locales</span>
+                        <span class="block text-sm font-black text-slate-700">${inp.competidores} <span class="text-[0.65rem] font-bold text-slate-400">cerca</span></span>
+                    </div>
+                </div>
+                <div class="bg-white border border-slate-100 p-3.5 rounded-2xl flex items-center gap-3 shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
+                    ${getEvalIcon(inp.densidad, [5000, 2000])}
+                    <div>
+                        <span class="block text-[0.55rem] text-slate-400 font-extrabold uppercase tracking-widest">Población</span>
+                        <span class="block text-sm font-black text-slate-700">${(inp.densidad/1000).toFixed(1)}k <span class="text-[0.65rem] font-bold text-slate-400">habs</span></span>
+                    </div>
+                </div>
+                <div class="bg-white border border-slate-100 p-3.5 rounded-2xl flex items-center gap-3 shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
+                    ${getEvalIcon(inp.flujo, [600, 200])}
+                    <div>
+                        <span class="block text-[0.55rem] text-slate-400 font-extrabold uppercase tracking-widest">Tráfico</span>
+                        <span class="block text-sm font-black text-slate-700">${(inp.flujo).toFixed(0)} <span class="text-[0.65rem] font-bold text-slate-400">/hr</span></span>
+                    </div>
+                </div>
+                <div class="bg-white border border-slate-100 p-3.5 rounded-2xl flex items-center gap-3 shadow-[0_2px_10px_rgb(0,0,0,0.02)]">
+                    ${getEvalIcon(inp.seguridad, [0.7, 0.4])}
+                    <div>
+                        <span class="block text-[0.55rem] text-slate-400 font-extrabold uppercase tracking-widest">Índice Seguro</span>
+                        <span class="block text-sm font-black text-slate-700">${(inp.seguridad*100).toFixed(0)}%</span>
+                    </div>
+                </div>
+            `;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            const compSec = document.getElementById("comparison-section");
+            if (results.A && results.B) {
+                compSec.classList.remove("hidden");
+                
+                document.getElementById("comp-score-A").innerText = results.A.score + "%";
+                document.getElementById("comp-score-A").className = `text-3xl font-black ${results.A.score >= 75 ? 'text-emerald-400' : (results.A.score >= 50 ? 'text-amber-400' : 'text-red-400')}`;
+             
+                document.getElementById("comp-score-B").innerText = results.B.score + "%";
+                document.getElementById("comp-score-B").className = `text-3xl font-black ${results.B.score >= 75 ? 'text-emerald-400' : (results.B.score >= 50 ? 'text-amber-400' : 'text-red-400')}`;
+              
+                const diff = results.A.score - results.B.score;
+                const verdict = document.getElementById("comparison-verdict");
+                if(Math.abs(diff) < 5) {
+                    verdict.innerHTML = `<span class="text-slate-300">Empate técnico. Ambas viables.</span>`;
+                    verdict.className = "p-3.5 bg-white/5 text-[0.7rem] uppercase tracking-wider font-bold text-center border-t border-white/10";
+                } else if(diff > 0) {
+                    verdict.innerHTML = `Punto A lidera por <span class="text-red-400">+${diff}%</span>`;
+                    verdict.className = "p-3.5 bg-red-900/20 text-[0.7rem] uppercase tracking-wider font-bold text-center border-t border-white/10";
+                } else {
+                    verdict.innerHTML = `Punto B lidera por <span class="text-emerald-400">+${Math.abs(diff)}%</span>`;
+                    verdict.className = "p-3.5 bg-emerald-900/20 text-[0.7rem] uppercase tracking-wider font-bold text-center border-t border-white/10";
+                }
+            } else {
+                compSec.classList.add("hidden");
+            }
+
+            const sliderVentas = document.getElementById('input-ventas');
+            const ventasProyectadas = predecirVentas(score, inp.flujo, inp.densidad);
+            sliderVentas.value = Math.min(500000, ventasProyectadas);
+            updateSimTextOnly();
+            updateSim(); 
+        }
+
+        function updateSim(){
+            updateSimTextOnly();
+            const inversion = parseFloat(document.getElementById('input-inversion').value);
+            const ventas = parseFloat(document.getElementById('input-ventas').value);
+            const config = businessData[currentBusiness] || { margen: 0.25 };
+            const margenBruto = config.margen;
+
+            const activeRes = results[currentPoint] || results.A;
+            const rentaEstimada = activeRes ? activeRes.inputs.renta : 12000;
+            
+            const gastosOperativos = rentaEstimada + 4000 + 12000; 
+
+            const utilidadMensual = (ventas * margenBruto) - gastosOperativos;
+            const roiAnual = inversion > 0 ? ((utilidadMensual * 12) / inversion) * 100 : 0;
+            const roiResult = document.getElementById('roi-result');
+
+            if(utilidadMensual > 0){
+                roiResult.innerText = roiAnual.toFixed(1) + "%";
+                roiResult.className = "text-3xl font-black text-emerald-400 relative z-10 drop-shadow-[0_0_10px_rgba(52,211,153,0.5)]";
+            } else {
+                roiResult.innerText = "PÉRDIDA";
+                roiResult.className = "text-2xl font-black text-red-400 relative z-10 drop-shadow-[0_0_10px_rgba(248,113,113,0.5)]";
+            }
+        }
+
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const easeOutQuad = 1 - (1 - progress) * (1 - progress);
+                obj.innerHTML = Math.floor(easeOutQuad * (end - start) + start) + "%";
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+    </script>
+</body>
+</html>
